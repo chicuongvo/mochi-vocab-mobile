@@ -197,7 +197,9 @@ export default function CoursesScreen() {
 
       {/* Coming Soon Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Coming Soon 🚀</Text>
+        <Text style={{ ...styles.sectionTitle, marginBottom: 8 }}>
+          Coming Soon 🚀
+        </Text>
         <View style={styles.comingSoonCard}>
           <Text style={styles.comingSoonIcon}>🎯</Text>
           <View style={styles.comingSoonContent}>
