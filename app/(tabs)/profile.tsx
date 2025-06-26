@@ -244,8 +244,8 @@ export default function ProfileScreen() {
           <View style={styles.motivationContent}>
             <Text style={styles.motivationTitle}>Keep Going, Champion!</Text>
             <Text style={styles.motivationText}>
-              Mochi & Michi are so proud of your progress! You've come so far,
-              and every word you learn brings you closer to fluency. Keep
+              Mochi & Michi are so proud of your progress! You&apos;ve come so
+              far, and every word you learn brings you closer to fluency. Keep
               shining! ✨
             </Text>
           </View>

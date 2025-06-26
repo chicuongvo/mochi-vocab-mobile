@@ -15,7 +15,7 @@ export default function HomeScreen() {
   const todayProgress = 85;
 
   const navigateToReview = () => {
-    router.push("/review");
+    router.push("/(tabs)/review");
   };
 
   const navigateToCourses = () => {
