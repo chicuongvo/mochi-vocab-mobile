@@ -1,8 +1,5 @@
 import { ExerciseType } from "@/types/lesson";
-import {
-  CircleCheck as CheckCircle,
-  Circle as XCircle,
-} from "lucide-react-native";
+import { ChevronLeft, ChevronRight } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -12,9 +9,13 @@ interface ActionButtonsProps {
   selectedOption: string | null;
   userAnswer: string;
   wordOrder: string[];
+  currentExerciseIndex: number;
+  totalExercises: number;
   onCheck: () => void;
   onRevealAnswer: () => void;
   onAnswerResponse: (isCorrect: boolean) => void;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
@@ -23,15 +24,19 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   selectedOption,
   userAnswer,
   wordOrder,
+  currentExerciseIndex,
+  totalExercises,
   onCheck,
   onRevealAnswer,
   onAnswerResponse,
+  onPrevious,
+  onNext,
 }) => {
   const isDisabled = () => {
     switch (exerciseType) {
       case "multiple-choice":
-      case "fill-blank":
         return !selectedOption;
+      case "fill-blank":
       case "spelling":
         return !userAnswer.trim();
       case "word-order":
@@ -70,19 +75,27 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     <View style={styles.actionsContainer}>
       <View style={styles.answerButtons}>
         <TouchableOpacity
-          style={[styles.answerButton, styles.wrongButton]}
-          onPress={() => onAnswerResponse(false)}
+          style={[
+            styles.answerButton,
+            styles.previousButton,
+            currentExerciseIndex === 0 ? styles.disabledButton : null,
+          ]}
+          onPress={onPrevious}
+          disabled={currentExerciseIndex === 0}
         >
-          <XCircle size={24} color="#FFFFFF" />
-          <Text style={styles.answerButtonText}>Hard</Text>
+          <ChevronLeft size={24} color="#FFFFFF" />
+          <Text style={styles.answerButtonText}>Previous</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.answerButton, styles.correctButton]}
-          onPress={() => onAnswerResponse(true)}
+          style={[styles.answerButton, styles.nextButton]}
+          onPress={onNext}
+          // disabled={currentExerciseIndex >= totalExercises - 1}
         >
-          <CheckCircle size={24} color="#FFFFFF" />
-          <Text style={styles.answerButtonText}>Easy</Text>
+          <Text style={styles.answerButtonText}>
+            {currentExerciseIndex >= totalExercises - 1 ? "Done" : "Next"}
+          </Text>
+          <ChevronRight size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -132,11 +145,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     marginHorizontal: 6,
   },
-  wrongButton: {
-    backgroundColor: "#E74C3C",
+  previousButton: {
+    backgroundColor: "#95A5A6",
   },
-  correctButton: {
-    backgroundColor: "#2ECC71",
+  nextButton: {
+    backgroundColor: "#3498DB",
   },
   answerButtonText: {
     fontSize: 16,

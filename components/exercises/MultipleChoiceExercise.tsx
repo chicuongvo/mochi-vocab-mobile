@@ -38,7 +38,6 @@ export const MultipleChoiceExercise: React.FC<MultipleChoiceProps> = ({
         }}
       >
         <Volume2 size={20} color="#FFFFFF" />
-        <Text style={styles.audioButtonText}>🔊 Hear pronunciation</Text>
       </TouchableOpacity>
 
       <View style={styles.optionsContainer}>
@@ -72,20 +71,6 @@ export const MultipleChoiceExercise: React.FC<MultipleChoiceProps> = ({
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* Mochi encouragement */}
-      <View style={styles.mascotEncouragement}>
-        <Text style={styles.encouragementMascot}>🍡</Text>
-        <Text style={styles.encouragementText}>
-          {!selectedOption
-            ? "Take your time, Mochi believes in you!"
-            : showAnswer
-            ? selectedOption === exercise.correctAnswer
-              ? "Great job! 🎉"
-              : "Keep trying! 💪"
-            : "Good choice! Now check your answer!"}
-        </Text>
       </View>
     </View>
   </View>
