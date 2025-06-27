@@ -90,13 +90,11 @@ export default function LessonScreen() {
     ) {
       setWordOrder([...currentExercise.shuffledWords]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentExerciseIndex,
     currentExercise?.type,
     currentExercise?.shuffledWords,
-    flipAnim,
-    slideAnim,
-    draggedWordPosition,
   ]);
 
   const handleAnswer = (isCorrect: boolean) => {

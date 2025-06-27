@@ -1,11 +1,67 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Lock, Mail } from "lucide-react-native";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function LoginScreen() {
-  const handleLogin = () => {
-    router.replace("/(tabs)");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ email và mật khẩu");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert("Lỗi", "Email không hợp lệ");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await signIn(email, password);
+
+      if (error) {
+        let errorMessage = "Đăng nhập thất bại";
+
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Email hoặc mật khẩu không chính xác";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Vui lòng xác thực email trước khi đăng nhập";
+        } else if (error.message.includes("Too many requests")) {
+          errorMessage = "Quá nhiều lần thử. Vui lòng thử lại sau";
+        }
+
+        Alert.alert("Lỗi đăng nhập", errorMessage);
+      } else {
+        // Đăng nhập thành công, router sẽ tự động chuyển đến tabs
+        router.replace("/(tabs)");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      Alert.alert("Lỗi", "Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   return (
@@ -24,7 +80,7 @@ export default function LoginScreen() {
           </Text>
           <View style={styles.mascotContainer}>
             <Image
-              source={require("../../assets/images/Logo_MochiApp.png")} 
+              source={require("../../assets/images/Logo_MochiApp.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -42,6 +98,9 @@ export default function LoginScreen() {
             placeholderTextColor="#95A5A6"
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
           />
         </View>
 
@@ -52,6 +111,9 @@ export default function LoginScreen() {
             placeholder="Password"
             placeholderTextColor="#95A5A6"
             secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
           />
         </View>
 
@@ -62,19 +124,25 @@ export default function LoginScreen() {
           <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity
+          style={[styles.loginButton, isLoading && styles.disabledButton]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
           <LinearGradient
             colors={["#FF6B9D", "#FF8C42"]}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={styles.buttonText}>
+              {isLoading ? "Đang đăng nhập..." : "Sign In"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
         <View style={styles.loginPrompt}>
-          <Text style={styles.loginText}>Don't have an account? </Text>
+          <Text style={styles.loginText}>Don&apos;t have an account? </Text>
           <TouchableOpacity onPress={() => router.push("./register")}>
             <Text style={styles.loginLink}>Sign Up</Text>
           </TouchableOpacity>
@@ -175,7 +243,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
-  loginPrompt: { // Thêm định nghĩa cho loginPrompt
+  loginPrompt: {
+    // Thêm định nghĩa cho loginPrompt
     flexDirection: "row",
     marginTop: 20,
   },
@@ -189,8 +258,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   logo: {
-  width: 100,
-  height: 100,
-  borderRadius: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
 });

@@ -1,16 +1,28 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { router } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function LoadingScreen() {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/login");
-    }, 3000);
+  const { user, loading } = useAuth();
 
-    return () => clearTimeout(timer);
-  }, []);
+  useEffect(() => {
+    if (!loading) {
+      // Sau khi auth context đã load xong
+      const timer = setTimeout(() => {
+        if (user) {
+          // Đã đăng nhập -> đi đến tabs
+          router.replace("/(tabs)");
+        } else {
+          // Chưa đăng nhập -> đi đến login
+          router.replace("/(auth)/login");
+        }
+      }, 2000); // Giảm thời gian loading để UX tốt hơn
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading]);
 
   return (
     <View style={styles.container}>
