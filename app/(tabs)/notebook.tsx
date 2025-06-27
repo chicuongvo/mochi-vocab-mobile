@@ -65,6 +65,7 @@ export default function NotebookScreen() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [reviewStats, setReviewStats] = useState({ correct: 0, total: 0 });
   const [isFlipping, setIsFlipping] = useState(false);
+  const [filteredVocabulary, setFilteredVocabulary] = useState<Word[]>([]); // Thêm state cho kết quả tìm kiếm từ vựng
 
   // Animation refs
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -200,6 +201,13 @@ export default function NotebookScreen() {
   useEffect(() => {
     const delayedSearch = setTimeout(async () => {
       if (searchQuery.trim()) {
+        // Lọc từ vựng từ danh sách vocabularyWords
+        const matchedWords = vocabularyWords.filter(word =>
+          word.word.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setFilteredVocabulary(matchedWords);
+
+        // Tìm kiếm từ điển
         const result = await searchDictionary(searchQuery);
         setSearchResult(result);
 
@@ -210,13 +218,14 @@ export default function NotebookScreen() {
           useNativeDriver: true,
         }).start();
       } else {
+        setFilteredVocabulary([]);
         setSearchResult(null);
         searchResultOpacity.setValue(0);
       }
     }, 500);
 
     return () => clearTimeout(delayedSearch);
-  }, [searchQuery, searchResultOpacity]);
+  }, [searchQuery, searchResultOpacity, vocabularyWords]);
 
   // FAB animation
   useEffect(() => {
@@ -337,7 +346,7 @@ export default function NotebookScreen() {
     setIsFlipping(true);
     Animated.timing(flipAnim, {
       toValue: showAnswer ? 0 : 1,
-      duration: 400, // Reduced duration for smoother feel
+      duration: 400,
       useNativeDriver: true,
     }).start(() => {
       setIsFlipping(false);
@@ -364,6 +373,7 @@ export default function NotebookScreen() {
     setVocabularyWords(prev => [newWordData, ...prev]);
     setSearchQuery("");
     setSearchResult(null);
+    setFilteredVocabulary([]);
 
     // Show success feedback
     Alert.alert(
@@ -528,6 +538,79 @@ export default function NotebookScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
+    );
+  };
+
+  const renderVocabularyResults = () => {
+    if (filteredVocabulary.length === 0) return null;
+
+    return (
+      <View style={styles.vocabularyResultsContainer}>
+        <Text style={styles.vocabularyResultsTitle}>Saved Words</Text>
+        {filteredVocabulary.map(word => (
+          <View key={word.id} style={styles.vocabularyResultCard}>
+            <View style={styles.wordCardHeader}>
+              <View style={styles.wordCardInfo}>
+                <View style={styles.wordTitleRow}>
+                  <Text style={styles.wordCardTitle}>{word.word}</Text>
+                  <TouchableOpacity
+                    style={styles.favoriteButton}
+                    onPress={() => toggleFavorite(word.id)}
+                  >
+                    <Star
+                      size={18}
+                      color={word.isFavorite ? "#FFD700" : "#BDC3C7"}
+                      fill={word.isFavorite ? "#FFD700" : "none"}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.wordCardPronunciation}>
+                  {word.pronunciation}
+                </Text>
+                {word.topic ? (
+                  <View style={styles.topicBadge}>
+                    <Hash size={12} color="#9B59B6" />
+                    <Text style={styles.topicText}>{word.topic}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <TouchableOpacity style={styles.playButtonSmall}>
+                <Volume2 size={16} color="#7F8C8D" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.wordCardDefinition} numberOfLines={2}>
+              {word.definition}
+            </Text>
+            <View style={styles.wordCardFooter}>
+              <View style={styles.wordCardStats}>
+                <Text style={styles.dateAdded}>Added {word.dateAdded}</Text>
+                {word.reviewCount && word.reviewCount > 0 ? (
+                  <Text style={styles.reviewCount}>
+                    Reviewed {word.reviewCount} times
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.wordActions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    setEditingWord(word);
+                    setShowEditModal(true);
+                  }}
+                >
+                  <Edit3 size={16} color="#3498DB" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => deleteWord(word.id)}
+                >
+                  <Trash2 size={16} color="#E74C3C" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -787,11 +870,14 @@ export default function NotebookScreen() {
             ) : null}
           </View>
 
-          {/* Search Result */}
+          {/* Kết quả tìm kiếm từ vocabularyWords */}
+          {renderVocabularyResults()}
+
+          {/* Kết quả tìm kiếm từ dictionary */}
           {renderSearchResult()}
 
           {/* Empty State */}
-          {!searchQuery && !searchResult ? renderEmptyState() : null}
+          {!searchQuery && !searchResult && filteredVocabulary.length === 0 ? renderEmptyState() : null}
         </View>
 
         {/* Review Section */}
@@ -1316,6 +1402,28 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
+  vocabularyResultsContainer: {
+    marginTop: 16,
+  },
+  vocabularyResultsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2C3E50",
+    marginBottom: 12,
+  },
+  vocabularyResultCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2ECC71",
+  },
   emptyState: {
     alignItems: "center",
     paddingVertical: 40,
@@ -1661,7 +1769,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    // Add these properties for smoother animation
     transform: [{ perspective: 1000 }],
   },
   cardFront: {
