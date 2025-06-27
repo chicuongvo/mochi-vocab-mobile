@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { ArrowLeft, Mail } from "lucide-react-native";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Mail } from "lucide-react-native";
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function ForgotPasswordScreen() {
   return (
@@ -14,12 +14,6 @@ export default function ForgotPasswordScreen() {
         end={{ x: 1, y: 1 }}
       >
         <View style={styles.headerContent}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#FFFFFF" />
-          </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>Forgot Password? 🔒</Text>
             <Text style={styles.headerSubtitle}>
@@ -27,7 +21,11 @@ export default function ForgotPasswordScreen() {
             </Text>
           </View>
           <View style={styles.mascotContainer}>
-            <Text style={styles.mascot}>🐱</Text>
+            <Image
+              source={require("../../assets/images/Logo_MochiApp.png")} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
         </View>
       </LinearGradient>
@@ -78,7 +76,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerContent: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "space-between",
   },
@@ -88,8 +86,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerInfo: {
-    flex: 1,
-    marginLeft: 16,
+    alignItems: "center",
+    marginLeft: 0, 
+    marginBottom: 20, 
   },
   headerTitle: {
     fontSize: 24,
@@ -169,4 +168,9 @@ const styles = StyleSheet.create({
     color: "#2ECC71",
     fontWeight: "600",
   },
+  logo: {
+  width: 100,
+  height: 100,
+  borderRadius: 20, 
+},
 });
