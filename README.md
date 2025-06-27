@@ -1,6 +1,6 @@
-# Welcome to your Expo app 👋
+# Welcome to EngLearn 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+An English learning app built with Expo and Supabase, featuring interactive exercises and drag-and-drop functionality.
 
 ## Get started
 
@@ -10,7 +10,20 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Set up environment variables
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Then edit `.env` file and add your Supabase credentials:
+
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=your-supabase-url-here
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
+   ```
+
+3. Start the app
 
    ```bash
    npx expo start
