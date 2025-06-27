@@ -1,8 +1,11 @@
+import { Text, View } from "react-native";
 
-function review() {
+function Review() {
   return (
-    <div>review</div>
-  )
+    <View>
+      <Text>Review</Text>
+    </View>
+  );
 }
 
-export default review
+export default Review;

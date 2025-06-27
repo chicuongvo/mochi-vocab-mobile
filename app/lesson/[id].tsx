@@ -1,3 +1,5 @@
+import { useCourse } from "@/contexts/CourseContext";
+import { supabase } from "@/lib/supabase";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import {
@@ -17,6 +19,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -36,6 +39,7 @@ type ExerciseType =
   | "spelling";
 
 interface Word {
+  id: number;
   word: string;
   pronunciation: string;
   definition: string;
@@ -59,100 +63,64 @@ interface Exercise {
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
+  const { setCourseById, currentCourse, currentWords, loading } = useCourse();
+  const [user, setUser] = useState<any>(null);
+
+  // Exercise states
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [wrongAnswers, setWrongAnswers] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [wordOrder, setWordOrder] = useState<string[]>([]);
-  const [selectedWordIndex, setSelectedWordIndex] = useState<number | null>(
-    null
-  );
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [wrongAnswers, setWrongAnswers] = useState(0);
+
+  // Drag and drop states
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedWordIndex, setDraggedWordIndex] = useState<number | null>(null);
+  const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
+  const draggedWordPosition = useRef(new Animated.ValueXY()).current;
+  const wordPositions = useRef<{ [key: number]: { x: number; y: number } }>(
+    {}
+  ).current;
+
+  // Animations
   const flipAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  // Sample lesson data with multiple exercise types
-  const lessonData = {
-    1: {
-      title: "TOEIC Vocabulary",
-      subtitle: "Business English Essentials",
-      color: ["#FF6B9D", "#FF8C42"] as const,
-      words: [
-        {
-          word: "Collaborate",
-          pronunciation: "/kəˈlæbəreɪt/",
-          definition:
-            "To work jointly with others or together especially in an intellectual endeavor",
-          example:
-            "We need to collaborate with the marketing team on this project.",
-          difficulty: "Intermediate",
-          synonyms: ["cooperate", "work together", "partner"],
-          antonyms: ["compete", "oppose"],
-        },
-        {
-          word: "Comprehensive",
-          pronunciation: "/ˌkɒmprɪˈhensɪv/",
-          definition: "Complete and including everything that is necessary",
-          example:
-            "The report provides a comprehensive analysis of market trends.",
-          difficulty: "Advanced",
-          synonyms: ["complete", "thorough", "extensive"],
-          antonyms: ["incomplete", "partial"],
-        },
-        {
-          word: "Implement",
-          pronunciation: "/ˈɪmplɪment/",
-          definition: "To put a decision or plan into effect",
-          example:
-            "The company will implement new safety procedures next month.",
-          difficulty: "Intermediate",
-          synonyms: ["execute", "carry out", "apply"],
-          antonyms: ["abandon", "ignore"],
-        },
-        {
-          word: "Efficiency",
-          pronunciation: "/ɪˈfɪʃənsi/",
-          definition: "The state or quality of being efficient",
-          example: "The new system improved workplace efficiency by 30%.",
-          difficulty: "Intermediate",
-          synonyms: ["effectiveness", "productivity", "competence"],
-          antonyms: ["inefficiency", "waste"],
-        },
-        {
-          word: "Prioritize",
-          pronunciation: "/praɪˈɒrɪtaɪz/",
-          definition:
-            "To designate or treat something as more important than other things",
-          example:
-            "We need to prioritize customer satisfaction above all else.",
-          difficulty: "Intermediate",
-          synonyms: ["rank", "order", "emphasize"],
-          antonyms: ["neglect", "ignore"],
-        },
-      ],
-    },
-  };
+  useEffect(() => {
+    // Get current user
+    const getCurrentUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getCurrentUser();
 
-  const currentLesson = lessonData[parseInt(id as string) as keyof typeof lessonData] || lessonData[1];
+    if (id) {
+      setCourseById(parseInt(id as string));
+    }
+  }, [id]);
 
   // Generate exercises from words
   const generateExercises = (): Exercise[] => {
+    if (!currentWords || currentWords.length === 0) return [];
+
     const exercises: Exercise[] = [];
     const exerciseTypes: ExerciseType[] = [
-      "flashcard",
       "multiple-choice",
       "fill-blank",
       "word-order",
-      "listening",
-      "spelling",
     ];
 
-    currentLesson.words.forEach((word, index) => {
+    currentWords.forEach(word => {
       // Add 2-3 different exercise types per word
-      const selectedTypes = exerciseTypes
-        .slice(0, 3)
-        .sort(() => Math.random() - 0.5);
+      const selectedTypes = [...exerciseTypes]
+
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 1);
 
       selectedTypes.forEach(type => {
         switch (type) {
@@ -160,9 +128,7 @@ export default function LessonScreen() {
             exercises.push({ type, word });
             break;
           case "multiple-choice":
-            const otherWords = currentLesson.words.filter(
-              w => w.word !== word.word
-            );
+            const otherWords = currentWords.filter(w => w.word !== word.word);
             const wrongOptions = otherWords.slice(0, 3).map(w => w.definition);
             const options = [word.definition, ...wrongOptions].sort(
               () => Math.random() - 0.5
@@ -180,7 +146,7 @@ export default function LessonScreen() {
               new RegExp(word.word, "gi"),
               "______"
             );
-            const otherWordsForOptions = currentLesson.words.filter(
+            const otherWordsForOptions = currentWords.filter(
               w => w.word !== word.word
             );
             const fillOptions = [
@@ -223,7 +189,13 @@ export default function LessonScreen() {
     return exercises.sort(() => Math.random() - 0.5); // Shuffle exercises
   };
 
-  const [exercises] = useState(() => generateExercises());
+  // Generate exercises when currentWords changes
+  useEffect(() => {
+    if (currentWords && currentWords.length > 0) {
+      const newExercises = generateExercises();
+      setExercises(newExercises);
+    }
+  }, [currentWords]); // Remove generateExercises from dependency to avoid recreation
   const currentExercise = exercises[currentExerciseIndex];
   const totalExercises = exercises.length;
   const progress = ((currentExerciseIndex + 1) / totalExercises) * 100;
@@ -234,9 +206,12 @@ export default function LessonScreen() {
     setUserAnswer("");
     setSelectedOption(null);
     setWordOrder([]);
-    setSelectedWordIndex(null);
+    setIsDragging(false);
+    setDraggedWordIndex(null);
+    setDropZoneIndex(null);
     flipAnim.setValue(0);
     slideAnim.setValue(0);
+    draggedWordPosition.setValue({ x: 0, y: 0 });
 
     // Initialize word order for word-order exercises
     if (
@@ -245,7 +220,14 @@ export default function LessonScreen() {
     ) {
       setWordOrder([...currentExercise.shuffledWords]);
     }
-  }, [currentExerciseIndex]);
+  }, [
+    currentExerciseIndex,
+    currentExercise?.type,
+    currentExercise?.shuffledWords,
+    flipAnim,
+    slideAnim,
+    draggedWordPosition,
+  ]);
 
   const handleAnswer = (isCorrect: boolean) => {
     if (isCorrect) {
@@ -270,7 +252,7 @@ export default function LessonScreen() {
         );
         Alert.alert(
           "Lesson Complete! 🎉",
-          `Congratulations! You completed the lesson with ${accuracy}% accuracy. Mochi & Michi are so proud! 🍡🐱`,
+          `Congratulations! You completed the lesson with ${accuracy}% accuracy.`,
           [{ text: "Continue", onPress: () => router.replace("/(tabs)") }]
         );
       }
@@ -308,16 +290,136 @@ export default function LessonScreen() {
     setWordOrder(newOrder);
   };
 
-  const handleWordPress = (index: number) => {
-    if (selectedWordIndex === null) {
-      setSelectedWordIndex(index);
-    } else {
-      if (selectedWordIndex !== index) {
-        moveWord(selectedWordIndex, index);
-      }
-      setSelectedWordIndex(null);
-    }
+  // Create pan responder for drag and drop
+  const createPanResponder = (index: number) => {
+    return PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderGrant: (evt, gestureState) => {
+        setIsDragging(true);
+        setDraggedWordIndex(index);
+        draggedWordPosition.setOffset({
+          x: (draggedWordPosition.x as any)._value,
+          y: (draggedWordPosition.y as any)._value,
+        });
+        draggedWordPosition.setValue({ x: 0, y: 0 });
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        draggedWordPosition.setValue({
+          x: gestureState.dx,
+          y: gestureState.dy,
+        });
+
+        // Calculate which word position we're hovering over
+        const currentX = evt.nativeEvent.pageX;
+        const currentY = evt.nativeEvent.pageY;
+
+        // Find the closest word position
+        let closestIndex = -1;
+        let minDistance = Infinity;
+
+        Object.keys(wordPositions).forEach(key => {
+          const pos = wordPositions[parseInt(key)];
+          const distance = Math.sqrt(
+            Math.pow(currentX - pos.x, 2) + Math.pow(currentY - pos.y, 2)
+          );
+          if (distance < minDistance && parseInt(key) !== index) {
+            minDistance = distance;
+            closestIndex = parseInt(key);
+          }
+        });
+
+        if (minDistance < 50) {
+          // Within 50 pixels
+          setDropZoneIndex(closestIndex);
+        } else {
+          setDropZoneIndex(null);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        setIsDragging(false);
+        setDraggedWordIndex(null);
+
+        if (dropZoneIndex !== null && dropZoneIndex !== index) {
+          moveWord(index, dropZoneIndex);
+        }
+
+        setDropZoneIndex(null);
+        draggedWordPosition.flattenOffset();
+
+        // Reset position with animation
+        Animated.spring(draggedWordPosition, {
+          toValue: { x: 0, y: 0 },
+          useNativeDriver: false,
+        }).start();
+      },
+    });
   };
+
+  const handleWordLayout = (index: number, event: any) => {
+    const { x, y, width, height } = event.nativeEvent.layout;
+    wordPositions[index] = {
+      x: x + width / 2,
+      y: y + height / 2,
+    };
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={styles.loadingText}>Loading lesson...</Text>
+      </View>
+    );
+  }
+
+  // No data state
+  if (!currentCourse || !currentWords || currentWords.length === 0) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={styles.errorText}>
+          Course not found or no words available
+        </Text>
+        <TouchableOpacity
+          style={styles.backToCoursesButton}
+          onPress={() => router.replace("/(tabs)/courses")}
+        >
+          <Text style={styles.backToCoursesText}>Back to Courses</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // No exercises generated
+  if (exercises.length === 0) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={styles.errorText}>No exercises available</Text>
+        <TouchableOpacity
+          style={styles.backToCoursesButton}
+          onPress={() => router.replace("/(tabs)/courses")}
+        >
+          <Text style={styles.backToCoursesText}>Back to Courses</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const renderExercise = () => {
     switch (currentExercise.type) {
@@ -398,7 +500,11 @@ export default function LessonScreen() {
           ]}
         >
           <LinearGradient
-            colors={currentLesson.color}
+            colors={
+              currentCourse
+                ? [currentCourse.color_start, currentCourse.color_end]
+                : ["#9B59B6", "#8E44AD"]
+            }
             style={styles.cardGradient}
           >
             <View style={styles.cardContent}>
@@ -589,36 +695,47 @@ export default function LessonScreen() {
         </View>
 
         <Text style={styles.instructionText}>
-          Tap the words to reorder them into the correct sentence:
+          Drag and drop the words to form the correct sentence:
         </Text>
 
         <View style={styles.wordOrderContainer}>
-          {wordOrder.map((word, index) => (
-            <TouchableOpacity
-              key={`${word}-${index}`}
-              style={[
-                styles.wordChip,
-                selectedWordIndex === index && styles.selectedWordChip,
-                showAnswer && styles.disabledWordChip,
-              ]}
-              onPress={() => !showAnswer && handleWordPress(index)}
-              disabled={showAnswer}
-            >
-              <Text
-                style={[
-                  styles.wordChipText,
-                  selectedWordIndex === index && styles.selectedWordChipText,
-                ]}
-              >
-                {word}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {wordOrder.map((word, index) => {
+            const panResponder = createPanResponder(index);
+            const isDraggedWord = draggedWordIndex === index;
+            const isDropZone = dropZoneIndex === index;
 
-        <View style={styles.sentencePreview}>
-          <Text style={styles.sentencePreviewLabel}>Your sentence:</Text>
-          <Text style={styles.sentencePreviewText}>{wordOrder.join(" ")}</Text>
+            return (
+              <Animated.View
+                key={`${word}-${index}`}
+                style={[
+                  styles.wordChip,
+                  isDraggedWord && styles.draggedWordChip,
+                  isDropZone && styles.dropZoneWordChip,
+                  showAnswer && styles.disabledWordChip,
+                  isDraggedWord && {
+                    transform: [
+                      { translateX: draggedWordPosition.x },
+                      { translateY: draggedWordPosition.y },
+                    ],
+                    zIndex: 1000,
+                    elevation: 10,
+                  },
+                ]}
+                onLayout={event => handleWordLayout(index, event)}
+                {...(showAnswer ? {} : panResponder.panHandlers)}
+              >
+                <Text
+                  style={[
+                    styles.wordChipText,
+                    isDraggedWord && styles.draggedWordChipText,
+                    isDropZone && styles.dropZoneWordChipText,
+                  ]}
+                >
+                  {word}
+                </Text>
+              </Animated.View>
+            );
+          })}
         </View>
 
         {showAnswer && (
@@ -630,17 +747,29 @@ export default function LessonScreen() {
           </View>
         )}
 
+        {/* Drag and drop instructions */}
+        <View style={styles.dragInstructions}>
+          <Text style={styles.dragInstructionsText}>
+            💡{" "}
+            {isDragging
+              ? "Release to drop the word"
+              : "Hold and drag words to reorder them"}
+          </Text>
+        </View>
+
         {/* Michi encouragement */}
         <View style={styles.mascotEncouragement}>
           <Text style={styles.encouragementMascot}>🐱</Text>
           <Text style={styles.encouragementText}>
             {wordOrder.length === 0
-              ? "Michi is here to help! Start by tapping a word!"
+              ? "Michi is here to help! Start by dragging a word!"
               : showAnswer
               ? wordOrder.join(" ") === currentExercise.correctAnswer
                 ? "Perfect! 🎉"
                 : "Good try! 💪"
-              : "Great! Keep arranging the words!"}
+              : isDragging
+              ? "Great! Keep dragging to arrange!"
+              : "Perfect! Try dragging the words around!"}
           </Text>
         </View>
       </View>
@@ -753,7 +882,11 @@ export default function LessonScreen() {
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={currentLesson.color}
+        colors={
+          currentCourse
+            ? [currentCourse.color_start, currentCourse.color_end]
+            : ["#FF6B9D", "#FF8C42"]
+        }
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -766,9 +899,12 @@ export default function LessonScreen() {
             <ArrowLeft size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>{currentLesson.title}</Text>
+            <Text style={styles.headerTitle}>
+              {currentCourse?.title || "Lesson"}
+            </Text>
             <Text style={styles.headerSubtitle}>
-              {currentExercise.type.replace("-", " ").toUpperCase()}
+              {currentExercise?.type.replace("-", " ").toUpperCase() ||
+                "LESSON"}
             </Text>
           </View>
           <View style={styles.mascotContainer}>
@@ -1211,6 +1347,21 @@ const styles = StyleSheet.create({
     borderColor: "#FF6B9D",
     backgroundColor: "rgba(255, 107, 157, 0.1)",
   },
+  draggedWordChip: {
+    borderColor: "#3498DB",
+    backgroundColor: "rgba(52, 152, 219, 0.2)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 15,
+  },
+  dropZoneWordChip: {
+    borderColor: "#2ECC71",
+    backgroundColor: "rgba(46, 204, 113, 0.2)",
+    borderWidth: 3,
+    borderStyle: "dashed",
+  },
   disabledWordChip: {
     opacity: 0.6,
   },
@@ -1221,6 +1372,14 @@ const styles = StyleSheet.create({
   },
   selectedWordChipText: {
     color: "#FF6B9D",
+  },
+  draggedWordChipText: {
+    color: "#3498DB",
+    fontWeight: "bold",
+  },
+  dropZoneWordChipText: {
+    color: "#2ECC71",
+    fontWeight: "bold",
   },
   sentencePreview: {
     backgroundColor: "#F8F9FA",
@@ -1398,5 +1557,40 @@ const styles = StyleSheet.create({
     color: "#2C3E50",
     fontWeight: "600",
     marginLeft: 6,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#7F8C8D",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#E74C3C",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  backToCoursesButton: {
+    backgroundColor: "#3498DB",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  backToCoursesText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  dragInstructions: {
+    backgroundColor: "#E8F8F5",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  dragInstructionsText: {
+    fontSize: 14,
+    color: "#27AE60",
+    textAlign: "center",
+    fontWeight: "500",
   },
 });

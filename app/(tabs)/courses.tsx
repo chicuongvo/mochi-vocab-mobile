@@ -1,3 +1,4 @@
+import { useCourse } from "@/contexts/CourseContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { BookOpen, Star, Users } from "lucide-react-native";
@@ -9,95 +10,53 @@ import {
   View,
 } from "react-native";
 
-const courses = [
-  {
-    id: 1,
-    title: "TOEIC Vocabulary",
-    subtitle: "Business English Essentials",
-    level: "Intermediate",
-    words: 500,
-    progress: 68,
-    color: ["#FF6B9D", "#FF8C42"] as const,
-    icon: "💼",
-    students: "12.5k",
-  },
-  {
-    id: 2,
-    title: "IELTS Academic",
-    subtitle: "Academic Writing & Speaking",
-    level: "Advanced",
-    words: 750,
-    progress: 42,
-    color: ["#9B59B6", "#8E44AD"] as const,
-    icon: "🎓",
-    students: "8.2k",
-  },
-  {
-    id: 3,
-    title: "High School English",
-    subtitle: "Grade 10-12 Vocabulary",
-    level: "Beginner",
-    words: 300,
-    progress: 85,
-    color: ["#2ECC71", "#27AE60"] as const,
-    icon: "🏫",
-    students: "15.7k",
-  },
-  {
-    id: 4,
-    title: "Medical Terms",
-    subtitle: "Healthcare Professional",
-    level: "Expert",
-    words: 400,
-    progress: 23,
-    color: ["#E74C3C", "#C0392B"] as const,
-    icon: "🏥",
-    students: "4.1k",
-  },
-  {
-    id: 5,
-    title: "Daily Conversation",
-    subtitle: "Everyday English",
-    level: "Beginner",
-    words: 200,
-    progress: 90,
-    color: ["#F39C12", "#E67E22"] as const,
-    icon: "💬",
-    students: "25.3k",
-  },
-  {
-    id: 6,
-    title: "Technology Terms",
-    subtitle: "IT & Software",
-    level: "Intermediate",
-    words: 350,
-    progress: 55,
-    color: ["#3498DB", "#2980B9"] as const,
-    icon: "💻",
-    students: "9.8k",
-  },
-];
-
-const navigateToLesson = (courseId: number) => {
-  router.push(`/lesson/${courseId}`);
-};
-
-const getLevelColor = (level: string) => {
-  switch (level) {
-    case "Beginner":
-      return "#2ECC71";
-    case "Intermediate":
-      return "#F39C12";
-    case "Advanced":
-      return "#9B59B6";
-    case "Expert":
-      return "#E74C3C";
-    default:
-      return "#7F8C8D";
-  }
-};
-
 export default function CoursesScreen() {
+  const { courses, loading, error } = useCourse();
+
+  const navigateToLesson = (courseId: number) => {
+    router.push(`/lesson/${courseId}`);
+  };
+
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case "Beginner":
+        return "#2ECC71";
+      case "Intermediate":
+        return "#F39C12";
+      case "Advanced":
+        return "#9B59B6";
+      case "Expert":
+        return "#E74C3C";
+      default:
+        return "#7F8C8D";
+    }
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={styles.loadingText}>Loading courses...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={styles.errorText}>Error loading courses: {error}</Text>
+      </View>
+    );
+  }
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -127,14 +86,14 @@ export default function CoursesScreen() {
           <Text style={styles.sectionTitle}>Popular Courses</Text>
         </View>
 
-        {courses.map((course, index) => (
+        {courses.map(course => (
           <TouchableOpacity
             key={course.id}
             style={styles.courseCard}
             onPress={() => navigateToLesson(course.id)}
           >
             <LinearGradient
-              colors={course.color}
+              colors={[course.color_start, course.color_end]}
               style={styles.courseGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -146,7 +105,9 @@ export default function CoursesScreen() {
                   </View>
                   <View style={styles.courseInfo}>
                     <Text style={styles.courseTitle}>{course.title}</Text>
-                    <Text style={styles.courseSubtitle}>{course.subtitle}</Text>
+                    <Text style={styles.courseSubtitle}>
+                      {course.subtitle || course.description}
+                    </Text>
                   </View>
                   <View style={styles.courseMeta}>
                     <View
@@ -163,30 +124,24 @@ export default function CoursesScreen() {
                 <View style={styles.courseStats}>
                   <View style={styles.statItem}>
                     <BookOpen size={16} color="#FFFFFF" />
-                    <Text style={styles.statText}>{course.words} words</Text>
+                    <Text style={styles.statText}>
+                      {course.total_words} words
+                    </Text>
                   </View>
                   <View style={styles.statItem}>
                     <Users size={16} color="#FFFFFF" />
                     <Text style={styles.statText}>
-                      {course.students} students
+                      {course.estimated_time}min
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.progressSection}>
                   <View style={styles.progressHeader}>
-                    <Text style={styles.progressLabel}>Progress</Text>
+                    <Text style={styles.progressLabel}>Category</Text>
                     <Text style={styles.progressPercent}>
-                      {course.progress}%
+                      {course.category}
                     </Text>
-                  </View>
-                  <View style={styles.progressBarContainer}>
-                    <View
-                      style={[
-                        styles.progressBar,
-                        { width: `${course.progress}%` },
-                      ]}
-                    />
                   </View>
                 </View>
               </View>
@@ -412,5 +367,15 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 30,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#7F8C8D",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#E74C3C",
+    textAlign: "center",
   },
 });
