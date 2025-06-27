@@ -1,5 +1,11 @@
 // contexts/CourseContext.tsx
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { CourseService } from "../services/course.service";
 import { Course, Word } from "../types/database";
 
@@ -22,7 +28,7 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshCourses = async () => {
+  const refreshCourses = useCallback(async () => {
     try {
       setLoading(true);
       const coursesData = await CourseService.getCourses();
@@ -33,9 +39,9 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const setCourseById = async (courseId: number) => {
+  const setCourseById = useCallback(async (courseId: number) => {
     try {
       setLoading(true);
       const [course, words] = await Promise.all([
@@ -51,11 +57,11 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     refreshCourses();
-  }, []);
+  }, [refreshCourses]);
 
   return (
     <CourseContext.Provider
