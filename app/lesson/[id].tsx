@@ -1,4 +1,5 @@
 import { ActionButtons } from "@/components/ActionButtons";
+import GlobalLoading from "@/components/GlobalLoading";
 import { LessonHeader } from "@/components/LessonHeader";
 import { LessonStats } from "@/components/LessonStats";
 import {
@@ -23,7 +24,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import GlobalLoading from "@/components/GlobalLoading";
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();

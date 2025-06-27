@@ -1,3 +1,4 @@
+import GlobalLoading from "@/components/GlobalLoading";
 import { useCourse } from "@/contexts/CourseContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import GlobalLoading from "@/components/GlobalLoading";
 
 export default function CoursesScreen() {
   const { courses, loading, error } = useCourse();
