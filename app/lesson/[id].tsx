@@ -77,7 +77,7 @@ export default function LessonScreen() {
     1: {
       title: "TOEIC Vocabulary",
       subtitle: "Business English Essentials",
-      color: ["#FF6B9D", "#FF8C42"],
+      color: ["#FF6B9D", "#FF8C42"] as const,
       words: [
         {
           word: "Collaborate",
@@ -134,8 +134,7 @@ export default function LessonScreen() {
     },
   };
 
-  const currentLesson =
-    lessonData[id as keyof typeof lessonData] || lessonData[1];
+  const currentLesson = lessonData[parseInt(id as string) as keyof typeof lessonData] || lessonData[1];
 
   // Generate exercises from words
   const generateExercises = (): Exercise[] => {
@@ -362,7 +361,7 @@ export default function LessonScreen() {
           ]}
         >
           <LinearGradient
-            colors={["#FFFFFF", "#F8F9FA"]}
+            colors={["#FFFFFF", "#F8F9FA"] as const}
             style={styles.cardGradient}
           >
             <View style={styles.cardContent}>

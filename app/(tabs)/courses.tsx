@@ -17,7 +17,7 @@ const courses = [
     level: "Intermediate",
     words: 500,
     progress: 68,
-    color: ["#FF6B9D", "#FF8C42"],
+    color: ["#FF6B9D", "#FF8C42"] as const,
     icon: "💼",
     students: "12.5k",
   },
@@ -28,7 +28,7 @@ const courses = [
     level: "Advanced",
     words: 750,
     progress: 42,
-    color: ["#9B59B6", "#8E44AD"],
+    color: ["#9B59B6", "#8E44AD"] as const,
     icon: "🎓",
     students: "8.2k",
   },
@@ -39,7 +39,7 @@ const courses = [
     level: "Beginner",
     words: 300,
     progress: 85,
-    color: ["#2ECC71", "#27AE60"],
+    color: ["#2ECC71", "#27AE60"] as const,
     icon: "🏫",
     students: "15.7k",
   },
@@ -50,7 +50,7 @@ const courses = [
     level: "Expert",
     words: 400,
     progress: 23,
-    color: ["#E74C3C", "#C0392B"],
+    color: ["#E74C3C", "#C0392B"] as const,
     icon: "🏥",
     students: "4.1k",
   },
@@ -61,7 +61,7 @@ const courses = [
     level: "Beginner",
     words: 200,
     progress: 90,
-    color: ["#F39C12", "#E67E22"],
+    color: ["#F39C12", "#E67E22"] as const,
     icon: "💬",
     students: "25.3k",
   },
@@ -72,7 +72,7 @@ const courses = [
     level: "Intermediate",
     words: 350,
     progress: 55,
-    color: ["#3498DB", "#2980B9"],
+    color: ["#3498DB", "#2980B9"] as const,
     icon: "💻",
     students: "9.8k",
   },
@@ -102,7 +102,7 @@ export default function CoursesScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <LinearGradient
-        colors={["#9B59B6", "#8E44AD"]}
+        colors={["#9B59B6", "#8E44AD"] as const}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
