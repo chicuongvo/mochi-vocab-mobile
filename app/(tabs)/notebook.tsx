@@ -902,7 +902,11 @@ export default function NotebookScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <LinearGradient
         colors={["#9B59B6", "#8E44AD"]}
         style={styles.header}
         start={{ x: 0, y: 0 }}
@@ -920,11 +924,6 @@ export default function NotebookScreen() {
           </View>
         </View>
       </LinearGradient>
-
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <Search size={20} color="#7F8C8D" />
