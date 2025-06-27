@@ -1,9 +1,88 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Lock, Mail, User } from "lucide-react-native";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function RegisterScreen() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp } = useAuth();
+
+  const handleRegister = async () => {
+    if (!fullName || !email || !password || !confirmPassword) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert("Lỗi", "Email không hợp lệ");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await signUp(email, password, fullName);
+
+      if (error) {
+        let errorMessage = "Đăng ký thất bại";
+
+        if (error.message.includes("User already registered")) {
+          errorMessage = "Email đã được sử dụng";
+        } else if (error.message.includes("Password should be at least")) {
+          errorMessage = "Mật khẩu phải có ít nhất 6 ký tự";
+        } else if (error.message.includes("Invalid email")) {
+          errorMessage = "Email không hợp lệ";
+        }
+
+        Alert.alert("Lỗi đăng ký", errorMessage);
+      } else {
+        Alert.alert(
+          "Đăng ký thành công! 🎉",
+          "Vui lòng kiểm tra email để xác thực tài khoản.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push("./login"),
+            },
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      Alert.alert("Lỗi", "Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -20,7 +99,7 @@ export default function RegisterScreen() {
           </Text>
           <View style={styles.mascotContainer}>
             <Image
-              source={require("../../assets/images/Logo_MochiApp.png")} 
+              source={require("../../assets/images/Logo_MochiApp.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -36,6 +115,9 @@ export default function RegisterScreen() {
             style={styles.input}
             placeholder="Full Name"
             placeholderTextColor="#95A5A6"
+            value={fullName}
+            onChangeText={setFullName}
+            editable={!isLoading}
           />
         </View>
 
@@ -47,6 +129,9 @@ export default function RegisterScreen() {
             placeholderTextColor="#95A5A6"
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
           />
         </View>
 
@@ -57,6 +142,9 @@ export default function RegisterScreen() {
             placeholder="Password"
             placeholderTextColor="#95A5A6"
             secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+            editable={!isLoading}
           />
         </View>
 
@@ -67,17 +155,26 @@ export default function RegisterScreen() {
             placeholder="Confirm Password"
             placeholderTextColor="#95A5A6"
             secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            editable={!isLoading}
           />
         </View>
 
-        <TouchableOpacity style={styles.registerButton} onPress={() => router.replace("/(tabs)")}>
+        <TouchableOpacity
+          style={[styles.registerButton, isLoading && styles.disabledButton]}
+          onPress={handleRegister}
+          disabled={isLoading}
+        >
           <LinearGradient
             colors={["#9B59B6", "#8E44AD"]}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.buttonText}>Sign Up</Text>
+            <Text style={styles.buttonText}>
+              {isLoading ? "Đang đăng ký..." : "Sign Up"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -174,7 +271,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
-  loginPrompt: { 
+  loginPrompt: {
     flexDirection: "row",
     marginTop: 20,
   },
@@ -188,8 +285,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   logo: {
-  width: 100,
-  height: 100,
-  borderRadius: 20, 
-},
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
 });

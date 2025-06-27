@@ -1,9 +1,71 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Mail } from "lucide-react-native";
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function ForgotPasswordScreen() {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { resetPassword } = useAuth();
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert("Lỗi", "Vui lòng nhập email");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert("Lỗi", "Email không hợp lệ");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await resetPassword(email);
+
+      if (error) {
+        let errorMessage = "Không thể gửi email đặt lại mật khẩu";
+
+        if (error.message.includes("User not found")) {
+          errorMessage = "Email không tồn tại trong hệ thống";
+        }
+
+        Alert.alert("Lỗi", errorMessage);
+      } else {
+        Alert.alert(
+          "Thành công! 📧",
+          "Vui lòng kiểm tra email để đặt lại mật khẩu.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push("./login"),
+            },
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("Reset password error:", err);
+      Alert.alert("Lỗi", "Có lỗi xảy ra, vui lòng thử lại");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -22,7 +84,7 @@ export default function ForgotPasswordScreen() {
           </View>
           <View style={styles.mascotContainer}>
             <Image
-              source={require("../../assets/images/Logo_MochiApp.png")} 
+              source={require("../../assets/images/Logo_MochiApp.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -40,17 +102,26 @@ export default function ForgotPasswordScreen() {
             placeholderTextColor="#95A5A6"
             keyboardType="email-address"
             autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+            editable={!isLoading}
           />
         </View>
 
-        <TouchableOpacity style={styles.resetButton}>
+        <TouchableOpacity
+          style={[styles.resetButton, isLoading && styles.disabledButton]}
+          onPress={handleResetPassword}
+          disabled={isLoading}
+        >
           <LinearGradient
             colors={["#2ECC71", "#27AE60"]}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Text style={styles.buttonText}>Send Reset Link</Text>
+            <Text style={styles.buttonText}>
+              {isLoading ? "Đang gửi..." : "Send Reset Link"}
+            </Text>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -87,8 +158,8 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     alignItems: "center",
-    marginLeft: 0, 
-    marginBottom: 20, 
+    marginLeft: 0,
+    marginBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
@@ -169,8 +240,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   logo: {
-  width: 100,
-  height: 100,
-  borderRadius: 20, 
-},
+    width: 100,
+    height: 100,
+    borderRadius: 20,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
 });

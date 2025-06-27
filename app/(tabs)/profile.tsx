@@ -1,8 +1,44 @@
+import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
-import { BookOpen, Star, Trophy } from "lucide-react-native";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { BookOpen, LogOut, Star, Trophy } from "lucide-react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function ProfileScreen() {
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+      {
+        text: "Hủy",
+        style: "cancel",
+      },
+      {
+        text: "Đăng xuất",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const { error } = await signOut();
+            if (error) {
+              Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại.");
+            } else {
+              router.replace("/(auth)/login");
+            }
+          } catch (err) {
+            console.error("Logout error:", err);
+            Alert.alert("Lỗi", "Có lỗi xảy ra khi đăng xuất.");
+          }
+        },
+      },
+    ]);
+  };
   const userStats = {
     name: "Sarah Johnson",
     level: "Advanced Learner",
@@ -66,14 +102,24 @@ export default function ProfileScreen() {
             <Text style={styles.avatar}>👩‍🎓</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{userStats.name}</Text>
+            <Text style={styles.userName}>
+              {user?.fullName || userStats.name}
+            </Text>
             <Text style={styles.userLevel}>{userStats.level}</Text>
             <Text style={styles.joinDate}>
               Learning since {userStats.joinDate}
             </Text>
           </View>
-          <View style={styles.mascotContainer}>
-            <Text style={styles.mascot}>🐱</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={handleLogout}
+            >
+              <LogOut size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.mascotContainer}>
+              <Text style={styles.mascot}>🐱</Text>
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -301,6 +347,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#FFFFFF",
     opacity: 0.8,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  logoutButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 20,
+    padding: 8,
+    marginRight: 10,
   },
   mascotContainer: {
     backgroundColor: "rgba(255, 255, 255, 0.2)",
