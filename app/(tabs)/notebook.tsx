@@ -52,9 +52,9 @@ interface SearchResult {
 
 export default function NotebookScreen() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTab, setSelectedTab] = useState<"all" | "topic" | "recent">(
-    "all"
-  );
+  const [selectedTab, setSelectedTab] = useState<
+    "all" | "myVocabs" | "topic" | "recent"
+  >("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -66,7 +66,7 @@ export default function NotebookScreen() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [reviewStats, setReviewStats] = useState({ correct: 0, total: 0 });
   const [isFlipping, setIsFlipping] = useState(false);
-  const [filteredVocabulary, setFilteredVocabulary] = useState<Word[]>([]); // Thêm state cho kết quả tìm kiếm từ vựng
+  const [filteredVocabulary, setFilteredVocabulary] = useState<Word[]>([]);
 
   // Animation refs
   const fabScale = useRef(new Animated.Value(1)).current;
@@ -83,8 +83,8 @@ export default function NotebookScreen() {
     topic: "",
   });
 
-  // Sample vocabulary data
-  const [vocabularyWords, setVocabularyWords] = useState<Word[]>([
+  // State for My Vocabs (user-defined words)
+  const [myVocabs, setMyVocabs] = useState<Word[]>([
     {
       id: "1",
       word: "Serendipity",
@@ -150,7 +150,65 @@ export default function NotebookScreen() {
     },
   ]);
 
-  // Mock dictionary search function
+  // State for All Words (dictionary default words)
+  const [allWordsDictionary, setAllWordsDictionary] = useState<Word[]>([
+    {
+      id: "6",
+      word: "Benevolent",
+      pronunciation: "/bəˈnevələnt/",
+      definition: "Well-meaning and kindly",
+      example: "The benevolent donor gave generously to the charity.",
+      topic: "Virtue",
+      dateAdded: "2023-12-01",
+      isFavorite: false,
+      reviewCount: 0,
+    },
+    {
+      id: "7",
+      word: "Eloquent",
+      pronunciation: "/ˈeləkwənt/",
+      definition: "Fluent or persuasive in speaking or writing",
+      example: "Her eloquent speech moved the entire audience.",
+      topic: "Communication",
+      dateAdded: "2023-12-02",
+      isFavorite: false,
+      reviewCount: 0,
+    },
+    {
+      id: "8",
+      word: "Luminous",
+      pronunciation: "/ˈlo͞omənəs/",
+      definition: "Bright or shining, especially in the dark",
+      example: "The luminous moon lit up the night sky.",
+      topic: "Nature",
+      dateAdded: "2023-12-03",
+      isFavorite: false,
+      reviewCount: 0,
+    },
+    {
+      id: "9",
+      word: "Pragmatic",
+      pronunciation: "/praɡˈmadik/",
+      definition: "Dealing with things sensibly and realistically",
+      example: "His pragmatic approach solved the problem efficiently.",
+      topic: "Business",
+      dateAdded: "2023-12-04",
+      isFavorite: false,
+      reviewCount: 0,
+    },
+    {
+      id: "10",
+      word: "Tenacious",
+      pronunciation: "/təˈnāSHəs/",
+      definition: "Persistent in maintaining or holding to something",
+      example: "Her tenacious effort led to her success.",
+      topic: "Personality",
+      dateAdded: "2023-12-05",
+      isFavorite: false,
+      reviewCount: 0,
+    },
+  ]);
+
   const searchDictionary = async (
     query: string
   ): Promise<SearchResult | null> => {
@@ -158,61 +216,56 @@ export default function NotebookScreen() {
 
     setIsSearching(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const response = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${query}`
+      );
+      const data = await response.json();
 
-    // Mock search results
-    const mockResults: { [key: string]: SearchResult } = {
-      hello: {
-        word: "Hello",
-        pronunciation: "/həˈloʊ/",
-        definition: "Used as a greeting or to begin a phone conversation",
-        example: "Hello, how are you today?",
-        partOfSpeech: "exclamation",
-      },
-      beautiful: {
-        word: "Beautiful",
-        pronunciation: "/ˈbjuːtɪfəl/",
-        definition: "Pleasing the senses or mind aesthetically",
-        example: "The sunset was absolutely beautiful.",
-        partOfSpeech: "adjective",
-      },
-      adventure: {
-        word: "Adventure",
-        pronunciation: "/ədˈventʃər/",
-        definition: "An unusual and exciting or daring experience",
-        example: "Their trip to the mountains was quite an adventure.",
+      if (data.title === "No Definitions Found") {
+        return null;
+      }
+
+      const result = data[0];
+      return {
+        word: result.word,
+        pronunciation: result.phonetics[0]?.text || "/ˈsæmpəl/",
+        definition: result.meanings[0].definitions[0].definition,
+        example: result.meanings[0].definitions[0].example || `Example sentence with "${query}".`,
+        partOfSpeech: result.meanings[0].partOfSpeech,
+      };
+    } catch (error) {
+      console.error("Error fetching dictionary:", error);
+      return {
+        word: query.charAt(0).toUpperCase() + query.slice(1),
+        pronunciation: "/ˈsæmpəl/",
+        definition: "Could not fetch definition. Please try again later.",
+        example: `Example sentence with "${query}".`,
         partOfSpeech: "noun",
-      },
-    };
-
-    const result = mockResults[query.toLowerCase()] || {
-      word: query.charAt(0).toUpperCase() + query.slice(1),
-      pronunciation: "/ˈsæmpəl/",
-      definition: "This is a sample definition for demonstration purposes.",
-      example: `Here is an example sentence using the word "${query}".`,
-      partOfSpeech: "noun",
-    };
-
-    setIsSearching(false);
-    return result;
+      };
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  // Handle search
   useEffect(() => {
     const delayedSearch = setTimeout(async () => {
       if (searchQuery.trim()) {
-        // Lọc từ vựng từ danh sách vocabularyWords
-        const matchedWords = vocabularyWords.filter(word =>
-          word.word.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        let matchedWords: Word[] = [];
+        if (selectedTab === "all") {
+          matchedWords = allWordsDictionary.filter(word =>
+            word.word.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        } else if (selectedTab === "myVocabs") {
+          matchedWords = myVocabs.filter(word =>
+            word.word.toLowerCase().includes(searchQuery.toLowerCase())
+          );
+        }
         setFilteredVocabulary(matchedWords);
 
-        // Tìm kiếm từ điển
         const result = await searchDictionary(searchQuery);
         setSearchResult(result);
 
-        // Animate search result appearance
         Animated.timing(searchResultOpacity, {
           toValue: 1,
           duration: 300,
@@ -226,9 +279,8 @@ export default function NotebookScreen() {
     }, 500);
 
     return () => clearTimeout(delayedSearch);
-  }, [searchQuery, searchResultOpacity, vocabularyWords]);
+  }, [searchQuery, searchResultOpacity, selectedTab, allWordsDictionary, myVocabs]);
 
-  // FAB animation
   useEffect(() => {
     const pulse = () => {
       Animated.sequence([
@@ -247,7 +299,6 @@ export default function NotebookScreen() {
     pulse();
   }, [fabScale]);
 
-  // Reset flip animation when review word changes
   useEffect(() => {
     if (showReviewModal) {
       flipAnim.setValue(0);
@@ -256,26 +307,26 @@ export default function NotebookScreen() {
     }
   }, [currentReviewIndex, showReviewModal, flipAnim]);
 
-  // Filter words based on selected tab
   const getFilteredWords = () => {
     switch (selectedTab) {
       case "topic":
-        return vocabularyWords.sort((a, b) =>
+        return myVocabs.sort((a, b) =>
           (a.topic || "").localeCompare(b.topic || "")
         );
       case "recent":
-        return vocabularyWords.sort(
+        return myVocabs.sort(
           (a, b) =>
             new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
         );
+      case "myVocabs":
+        return myVocabs.sort((a, b) => a.word.localeCompare(b.word));
       default:
-        return vocabularyWords.sort((a, b) => a.word.localeCompare(b.word));
+        return allWordsDictionary.sort((a, b) => a.word.localeCompare(b.word));
     }
   };
 
-  // Start flashcard review
   const startReview = () => {
-    const wordsToReview = vocabularyWords.filter(
+    const wordsToReview = myVocabs.filter(
       word => word.isFavorite || (word.reviewCount || 0) < 3
     );
     if (wordsToReview.length === 0) {
@@ -286,19 +337,17 @@ export default function NotebookScreen() {
       return;
     }
 
-    setReviewWords(wordsToReview.sort(() => Math.random() - 0.5)); // Shuffle
+    setReviewWords(wordsToReview.sort(() => Math.random() - 0.5));
     setCurrentReviewIndex(0);
     setShowAnswer(false);
     setReviewStats({ correct: 0, total: 0 });
     setShowReviewModal(true);
   };
 
-  // Handle review answer
   const handleReviewAnswer = (isCorrect: boolean) => {
     const currentWord = reviewWords[currentReviewIndex];
 
-    // Update word stats
-    setVocabularyWords(prev =>
+    setMyVocabs(prev =>
       prev.map(word =>
         word.id === currentWord.id
           ? {
@@ -310,13 +359,11 @@ export default function NotebookScreen() {
       )
     );
 
-    // Update review stats
     setReviewStats(prev => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
       total: prev.total + 1,
     }));
 
-    // Move to next word or finish
     if (currentReviewIndex < reviewWords.length - 1) {
       setTimeout(() => {
         setCurrentReviewIndex(prev => prev + 1);
@@ -324,7 +371,6 @@ export default function NotebookScreen() {
         flipAnim.setValue(0);
       }, 1000);
     } else {
-      // Review completed
       setTimeout(() => {
         setShowReviewModal(false);
         const accuracy = Math.round(
@@ -340,9 +386,8 @@ export default function NotebookScreen() {
     }
   };
 
-  // Flip flashcard
   const flipCard = () => {
-    if (isFlipping) return; // Prevent multiple calls during animation
+    if (isFlipping) return;
 
     setIsFlipping(true);
     Animated.timing(flipAnim, {
@@ -355,7 +400,6 @@ export default function NotebookScreen() {
     setShowAnswer(!showAnswer);
   };
 
-  // Save word from search result
   const saveWordFromSearch = () => {
     if (!searchResult) return;
 
@@ -371,19 +415,17 @@ export default function NotebookScreen() {
       reviewCount: 0,
     };
 
-    setVocabularyWords(prev => [newWordData, ...prev]);
+    setMyVocabs(prev => [newWordData, ...prev]);
     setSearchQuery("");
     setSearchResult(null);
     setFilteredVocabulary([]);
 
-    // Show success feedback
     Alert.alert(
       "Success! 🎉",
       `"${searchResult.word}" has been added to your vocabulary!`
     );
   };
 
-  // Add new word manually
   const addNewWord = () => {
     if (!newWord.word.trim() || !newWord.definition.trim()) {
       Alert.alert(
@@ -405,7 +447,7 @@ export default function NotebookScreen() {
       reviewCount: 0,
     };
 
-    setVocabularyWords(prev => [wordData, ...prev]);
+    setMyVocabs(prev => [wordData, ...prev]);
     setNewWord({
       word: "",
       pronunciation: "",
@@ -421,7 +463,6 @@ export default function NotebookScreen() {
     );
   };
 
-  // Edit existing word
   const editWord = () => {
     if (!editingWord) return;
 
@@ -433,7 +474,7 @@ export default function NotebookScreen() {
       return;
     }
 
-    setVocabularyWords(prev =>
+    setMyVocabs(prev =>
       prev.map(word =>
         word.id === editingWord.id
           ? {
@@ -457,7 +498,6 @@ export default function NotebookScreen() {
     );
   };
 
-  // Delete word
   const deleteWord = (id: string) => {
     Alert.alert(
       "Delete Word? 🗑️",
@@ -468,15 +508,14 @@ export default function NotebookScreen() {
           text: "Delete",
           style: "destructive",
           onPress: () =>
-            setVocabularyWords(prev => prev.filter(w => w.id !== id)),
+            setMyVocabs(prev => prev.filter(w => w.id !== id)),
         },
       ]
     );
   };
 
-  // Toggle favorite
   const toggleFavorite = (id: string) => {
-    setVocabularyWords(prev =>
+    setMyVocabs(prev =>
       prev.map(word =>
         word.id === id ? { ...word, isFavorite: !word.isFavorite } : word
       )
@@ -717,7 +756,6 @@ export default function NotebookScreen() {
 
     return (
       <View style={styles.flashcardContainer}>
-        {/* Progress Bar */}
         <View style={styles.reviewProgress}>
           <Text style={styles.progressText}>
             {currentReviewIndex + 1} of {reviewWords.length}
@@ -727,14 +765,12 @@ export default function NotebookScreen() {
           </View>
         </View>
 
-        {/* Flashcard */}
         <Animated.View
           style={[
             styles.cardWrapper,
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          {/* Front of card */}
           <Animated.View
             style={[
               styles.flashcard,
@@ -787,7 +823,6 @@ export default function NotebookScreen() {
             </LinearGradient>
           </Animated.View>
 
-          {/* Back of card */}
           <Animated.View
             style={[
               styles.flashcard,
@@ -835,7 +870,6 @@ export default function NotebookScreen() {
           </Animated.View>
         </Animated.View>
 
-        {/* Tap to flip overlay */}
         {!showAnswer && !isFlipping ? (
           <TouchableOpacity
             style={styles.flipOverlay}
@@ -846,7 +880,6 @@ export default function NotebookScreen() {
           />
         ) : null}
 
-        {/* Mascot Encouragement */}
         <View style={styles.mascotEncouragement}>
           <Text style={styles.encouragementMascot}>
             {reviewStats.total === 0
@@ -869,7 +902,6 @@ export default function NotebookScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <LinearGradient
         colors={["#9B59B6", "#8E44AD"]}
         style={styles.header}
@@ -893,7 +925,6 @@ export default function NotebookScreen() {
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Section */}
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <Search size={20} color="#7F8C8D" />
@@ -911,18 +942,14 @@ export default function NotebookScreen() {
             ) : null}
           </View>
 
-          {/* Kết quả tìm kiếm từ vocabularyWords */}
           {renderVocabularyResults()}
 
-          {/* Kết quả tìm kiếm từ dictionary */}
           {renderSearchResult()}
 
-          {/* Empty State */}
           {!searchQuery && !searchResult && filteredVocabulary.length === 0 ? renderEmptyState() : null}
         </View>
 
-        {/* Review Section */}
-        {vocabularyWords.length > 0 ? (
+        {myVocabs.length > 0 ? (
           <View style={styles.reviewSection}>
             <TouchableOpacity style={styles.reviewCard} onPress={startReview}>
               <LinearGradient
@@ -945,7 +972,6 @@ export default function NotebookScreen() {
           </View>
         ) : null}
 
-        {/* Tab Switcher */}
         <View style={styles.tabSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.tabContainer}>
@@ -953,7 +979,7 @@ export default function NotebookScreen() {
                 style={[
                   styles.tab,
                   selectedTab === "all" ? styles.activeTab : null,
-                ]}
+                ].filter(Boolean) as any}
                 onPress={() => setSelectedTab("all")}
               >
                 <BookOpen
@@ -964,7 +990,7 @@ export default function NotebookScreen() {
                   style={[
                     styles.tabText,
                     selectedTab === "all" ? styles.activeTabText : null,
-                  ]}
+                  ].filter(Boolean) as any}
                 >
                   All Words
                 </Text>
@@ -973,8 +999,29 @@ export default function NotebookScreen() {
               <TouchableOpacity
                 style={[
                   styles.tab,
+                  selectedTab === "myVocabs" ? styles.activeTab : null,
+                ].filter(Boolean) as any}
+                onPress={() => setSelectedTab("myVocabs")}
+              >
+                <BookOpen
+                  size={16}
+                  color={selectedTab === "myVocabs" ? "#FFFFFF" : "#7F8C8D"}
+                />
+                <Text
+                  style={[
+                    styles.tabText,
+                    selectedTab === "myVocabs" ? styles.activeTabText : null,
+                  ].filter(Boolean) as any}
+                >
+                  My Vocabs
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tab,
                   selectedTab === "topic" ? styles.activeTab : null,
-                ]}
+                ].filter(Boolean) as any}
                 onPress={() => setSelectedTab("topic")}
               >
                 <Hash
@@ -985,7 +1032,7 @@ export default function NotebookScreen() {
                   style={[
                     styles.tabText,
                     selectedTab === "topic" ? styles.activeTabText : null,
-                  ]}
+                  ].filter(Boolean) as any}
                 >
                   By Topic
                 </Text>
@@ -995,7 +1042,7 @@ export default function NotebookScreen() {
                 style={[
                   styles.tab,
                   selectedTab === "recent" ? styles.activeTab : null,
-                ]}
+                ].filter(Boolean) as any}
                 onPress={() => setSelectedTab("recent")}
               >
                 <Clock
@@ -1006,7 +1053,7 @@ export default function NotebookScreen() {
                   style={[
                     styles.tabText,
                     selectedTab === "recent" ? styles.activeTabText : null,
-                  ]}
+                  ].filter(Boolean) as any}
                 >
                   Recently Added
                 </Text>
@@ -1015,11 +1062,11 @@ export default function NotebookScreen() {
           </ScrollView>
         </View>
 
-        {/* Words List */}
         <View style={styles.wordsSection}>
           <View style={styles.wordsSectionHeader}>
             <Text style={styles.wordsSectionTitle}>
-              {selectedTab === "all" ? "All Words" : null}
+              {selectedTab === "all" ? "Dictionary Words" : null}
+              {selectedTab === "myVocabs" ? "My Vocabulary" : null}
               {selectedTab === "topic" ? "Organized by Topic" : null}
               {selectedTab === "recent" ? "Recently Added" : null}
             </Text>
@@ -1034,7 +1081,6 @@ export default function NotebookScreen() {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Floating Action Button */}
       <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
         <TouchableOpacity onPress={() => setShowAddModal(true)}>
           <LinearGradient
@@ -1048,7 +1094,6 @@ export default function NotebookScreen() {
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Add Word Modal */}
       <Modal
         visible={showAddModal}
         animationType="slide"
@@ -1138,7 +1183,6 @@ export default function NotebookScreen() {
         </View>
       </Modal>
 
-      {/* Edit Word Modal */}
       <Modal
         visible={showEditModal}
         animationType="slide"
@@ -1242,7 +1286,6 @@ export default function NotebookScreen() {
         </View>
       </Modal>
 
-      {/* Review Modal */}
       <Modal
         visible={showReviewModal}
         animationType="slide"
@@ -1263,7 +1306,6 @@ export default function NotebookScreen() {
 
           {renderFlashcard()}
 
-          {/* Answer Buttons */}
           {showAnswer ? (
             <View style={styles.answerButtons}>
               <TouchableOpacity
