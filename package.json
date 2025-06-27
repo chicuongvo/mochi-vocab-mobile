@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@lottiefiles/dotlottie-react": "^0.14.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
@@ -31,6 +30,7 @@
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.8",
     "expo-web-browser": "~14.1.6",
+    "lottie-react-native": "^7.2.2",
     "lucide-react-native": "^0.524.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -50,10 +50,7 @@
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
-    "typescript": "~5.8.3",
-    "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"
   },
   "private": true
 }
-
