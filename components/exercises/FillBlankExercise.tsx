@@ -2,96 +2,119 @@ import { Exercise } from "@/types/lesson";
 import * as Speech from "expo-speech";
 import { BookOpen, Volume2 } from "lucide-react-native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface FillBlankProps {
   exercise: Exercise;
   showAnswer: boolean;
-  selectedOption: string | null;
-  setSelectedOption: (option: string) => void;
+  userAnswer: string;
+  setUserAnswer: (answer: string) => void;
 }
 
 export const FillBlankExercise: React.FC<FillBlankProps> = ({
   exercise,
   showAnswer,
-  selectedOption,
-  setSelectedOption,
-}) => (
-  <View style={styles.exerciseContainer}>
-    <View style={styles.questionCard}>
-      <View style={styles.exerciseHeader}>
-        <BookOpen size={24} color="#9B59B6" />
-        <Text style={styles.exerciseTitle}>
-          Fill in the blank with IPA hint
-        </Text>
-      </View>
-
-      <Text style={styles.sentenceText}>{exercise.blankedSentence}</Text>
-
-      <View style={styles.ipaHintContainer}>
-        <Text style={styles.ipaHintLabel}>Pronunciation hint:</Text>
-        <Text style={styles.ipaHintText}>{exercise.ipaHint}</Text>
-        <TouchableOpacity
-          style={styles.audioButton}
-          onPress={() => {
-            Speech.speak(exercise.word.word, {
-              language: "en",
-              pitch: 1,
-              rate: 1,
-            });
-          }}
-        >
-          <Volume2 size={16} color="#FFFFFF" />
-          <Text style={styles.audioButtonText}>🔊 Hear pronunciation</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.optionsContainer}>
-        {exercise.options?.map((option, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.optionButton,
-              selectedOption === option && styles.selectedOption,
-              showAnswer &&
-                option === exercise.correctAnswer &&
-                styles.correctOption,
-              showAnswer &&
-                selectedOption === option &&
-                option !== exercise.correctAnswer &&
-                styles.wrongOption,
-            ]}
-            onPress={() => !showAnswer && setSelectedOption(option)}
-            disabled={showAnswer}
-          >
-            <Text
-              style={[
-                styles.optionText,
-                selectedOption === option && styles.selectedOptionText,
-                showAnswer &&
-                  option === exercise.correctAnswer &&
-                  styles.correctOptionText,
-              ]}
-            >
-              {String.fromCharCode(65 + index)}. {option}
+  userAnswer,
+  setUserAnswer,
+}) => {
+  return (
+    <KeyboardAvoidingView
+      style={styles.exerciseContainer}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={100}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.questionCard}>
+          <View style={styles.exerciseHeader}>
+            <BookOpen size={24} color="#9B59B6" />
+            <Text style={styles.exerciseTitle}>
+              Fill in the blank (type your answer)
             </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+          </View>
 
-      {showAnswer && (
-        <View style={styles.answerReveal}>
-          <Text style={styles.correctAnswerLabel}>Correct answer:</Text>
-          <Text style={styles.correctAnswerText}>{exercise.correctAnswer}</Text>
+          <Text style={styles.sentenceText}>{exercise.blankedSentence}</Text>
+
+          {showAnswer ? (
+            <View style={styles.answerReveal}>
+              {userAnswer.toLowerCase().trim() ===
+              exercise.correctAnswer?.toLowerCase() ? (
+                <Text style={styles.resultText}>✅ Correct!</Text>
+              ) : (
+                <Text style={styles.resultTextWrong}>
+                  ❌ Your answer: &ldquo;{userAnswer}&rdquo;
+                </Text>
+              )}
+              <Text style={styles.correctAnswerLabel}>Correct answer:</Text>
+              <Text style={styles.correctAnswerText}>
+                {exercise.correctAnswer}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Type your answer:</Text>
+              <TextInput
+                style={[
+                  styles.textInput,
+                  showAnswer &&
+                  userAnswer.toLowerCase().trim() ===
+                    exercise.correctAnswer?.toLowerCase()
+                    ? styles.correctInput
+                    : showAnswer && userAnswer.trim() !== ""
+                    ? styles.wrongInput
+                    : null,
+                ]}
+                value={userAnswer}
+                onChangeText={setUserAnswer}
+                placeholder="Enter the missing word..."
+                placeholderTextColor="#BDC3C7"
+                editable={!showAnswer}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+          )}
+
+          <View style={styles.ipaHintContainer}>
+            <Text style={styles.ipaHintLabel}>Pronunciation hint:</Text>
+            <Text style={styles.ipaHintText}>{exercise.ipaHint}</Text>
+            <TouchableOpacity
+              style={styles.audioButton}
+              onPress={() => {
+                Speech.speak(exercise.word.word, {
+                  language: "en",
+                  pitch: 1,
+                  rate: 1,
+                });
+              }}
+            >
+              <Volume2 size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
-    </View>
-  </View>
-);
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
 
 const styles = StyleSheet.create({
   exerciseContainer: {
     flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
@@ -131,7 +154,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 20,
+    marginTop: 20,
     alignItems: "center",
   },
   ipaHintLabel: {
@@ -162,41 +185,33 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 6,
   },
-  optionsContainer: {
+  inputContainer: {
     marginTop: 20,
   },
-  optionButton: {
+  inputLabel: {
+    fontSize: 16,
+    color: "#2C3E50",
+    fontWeight: "600",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  textInput: {
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    fontSize: 16,
+    color: "#2C3E50",
     borderWidth: 2,
-    borderColor: "transparent",
+    borderColor: "#E8E6E8",
+    textAlign: "center",
   },
-  selectedOption: {
-    borderColor: "#FF6B9D",
-    backgroundColor: "rgba(255, 107, 157, 0.1)",
-  },
-  correctOption: {
+  correctInput: {
     borderColor: "#2ECC71",
     backgroundColor: "rgba(46, 204, 113, 0.1)",
   },
-  wrongOption: {
+  wrongInput: {
     borderColor: "#E74C3C",
     backgroundColor: "rgba(231, 76, 60, 0.1)",
-  },
-  optionText: {
-    fontSize: 16,
-    color: "#2C3E50",
-    lineHeight: 22,
-  },
-  selectedOptionText: {
-    color: "#FF6B9D",
-    fontWeight: "600",
-  },
-  correctOptionText: {
-    color: "#2ECC71",
-    fontWeight: "600",
   },
   answerReveal: {
     marginTop: 20,
@@ -205,11 +220,23 @@ const styles = StyleSheet.create({
   correctAnswerLabel: {
     fontSize: 16,
     color: "#7F8C8D",
-    marginBottom: 8,
+    marginTop: 8,
   },
   correctAnswerText: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2ECC71",
+  },
+  resultText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#2ECC71",
+    textAlign: "center",
+  },
+  resultTextWrong: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#E74C3C",
+    textAlign: "center",
   },
 });

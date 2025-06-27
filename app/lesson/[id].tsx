@@ -11,7 +11,6 @@ import {
 } from "@/components/exercises";
 import { useCourse } from "@/contexts/CourseContext";
 import { Exercise } from "@/types/lesson";
-import { DragDropHandlers, DragDropState } from "@/utils/dragDropHelpers";
 import { generateExercises } from "@/utils/generateExercises";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -38,15 +37,6 @@ export default function LessonScreen() {
   const [wordOrder, setWordOrder] = useState<string[]>([]);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState(0);
-
-  // Drag and drop states
-  const [isDragging, setIsDragging] = useState(false);
-  const [draggedWordIndex, setDraggedWordIndex] = useState<number | null>(null);
-  const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
-  const draggedWordPosition = useRef(new Animated.ValueXY()).current;
-  const wordPositions = useRef<{ [key: number]: { x: number; y: number } }>(
-    {}
-  ).current;
 
   // Animations
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -76,12 +66,8 @@ export default function LessonScreen() {
     setUserAnswer("");
     setSelectedOption(null);
     setWordOrder([]);
-    setIsDragging(false);
-    setDraggedWordIndex(null);
-    setDropZoneIndex(null);
     flipAnim.setValue(0);
     slideAnim.setValue(0);
-    draggedWordPosition.setValue({ x: 0, y: 0 });
 
     // Initialize word order for word-order exercises
     if (
@@ -104,27 +90,30 @@ export default function LessonScreen() {
       setWrongAnswers(prev => prev + 1);
     }
 
-    // Show answer first
+    // Show answer
     setShowAnswer(true);
+  };
 
-    // Auto-advance after 2 seconds
-    setTimeout(() => {
-      if (currentExerciseIndex < totalExercises - 1) {
-        setCurrentExerciseIndex(prev => prev + 1);
-      } else {
-        // Lesson completed
-        const accuracy = Math.round(
-          ((correctAnswers + (isCorrect ? 1 : 0)) /
-            (correctAnswers + wrongAnswers + 1)) *
-            100
-        );
-        Alert.alert(
-          "Lesson Complete! 🎉",
-          `Congratulations! You completed the lesson with ${accuracy}% accuracy.`,
-          [{ text: "Continue", onPress: () => router.replace("/(tabs)") }]
-        );
-      }
-    }, 2000);
+  const handleNext = () => {
+    if (currentExerciseIndex < totalExercises - 1) {
+      setCurrentExerciseIndex(prev => prev + 1);
+    } else {
+      // Lesson completed
+      const accuracy = Math.round(
+        (correctAnswers / (correctAnswers + wrongAnswers)) * 100
+      );
+      Alert.alert(
+        "Lesson Complete! 🎉",
+        `Congratulations! You completed the lesson with ${accuracy}% accuracy.`,
+        [{ text: "Continue", onPress: () => router.replace("/(tabs)") }]
+      );
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentExerciseIndex > 0) {
+      setCurrentExerciseIndex(prev => prev - 1);
+    }
   };
 
   const checkAnswer = () => {
@@ -149,37 +138,6 @@ export default function LessonScreen() {
     }
 
     handleAnswer(isCorrect);
-  };
-
-  const moveWord = (fromIndex: number, toIndex: number) => {
-    const newOrder = [...wordOrder];
-    const [movedWord] = newOrder.splice(fromIndex, 1);
-    newOrder.splice(toIndex, 0, movedWord);
-    setWordOrder(newOrder);
-  };
-
-  const handleWordLayout = (index: number, event: any) => {
-    const { x, y, width, height } = event.nativeEvent.layout;
-    wordPositions[index] = {
-      x: x + width / 2,
-      y: y + height / 2,
-    };
-  };
-
-  // Create drag drop state and handlers
-  const dragDropState: DragDropState = {
-    isDragging,
-    draggedWordIndex,
-    dropZoneIndex,
-    draggedWordPosition,
-    wordPositions,
-  };
-
-  const dragDropHandlers: DragDropHandlers = {
-    setIsDragging,
-    setDraggedWordIndex,
-    setDropZoneIndex,
-    moveWord,
   };
 
   const renderExercise = () => {
@@ -209,8 +167,8 @@ export default function LessonScreen() {
           <FillBlankExercise
             exercise={currentExercise}
             showAnswer={showAnswer}
-            selectedOption={selectedOption}
-            setSelectedOption={setSelectedOption}
+            userAnswer={userAnswer}
+            setUserAnswer={setUserAnswer}
           />
         );
       case "word-order":
@@ -219,9 +177,7 @@ export default function LessonScreen() {
             exercise={currentExercise}
             showAnswer={showAnswer}
             wordOrder={wordOrder}
-            dragDropState={dragDropState}
-            dragDropHandlers={dragDropHandlers}
-            handleWordLayout={handleWordLayout}
+            onAnswerChange={newAnswer => setWordOrder(newAnswer)}
           />
         );
       case "listening":
@@ -322,9 +278,13 @@ export default function LessonScreen() {
         selectedOption={selectedOption}
         userAnswer={userAnswer}
         wordOrder={wordOrder}
+        currentExerciseIndex={currentExerciseIndex}
+        totalExercises={totalExercises}
         onCheck={checkAnswer}
         onRevealAnswer={() => setShowAnswer(true)}
         onAnswerResponse={handleAnswer}
+        onPrevious={handlePrevious}
+        onNext={handleNext}
       />
 
       {/* Stats */}
