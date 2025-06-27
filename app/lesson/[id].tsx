@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import GlobalLoading from "@/components/GlobalLoading";
 
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
@@ -212,11 +213,7 @@ export default function LessonScreen() {
 
   // Loading state
   if (loading) {
-    return (
-      <View style={[styles.container, styles.centeredContainer]}>
-        <Text style={styles.loadingText}>Loading lesson...</Text>
-      </View>
-    );
+    return <GlobalLoading />;
   }
 
   // No data state
@@ -307,11 +304,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: "#7F8C8D",
-    textAlign: "center",
   },
   errorText: {
     fontSize: 18,
