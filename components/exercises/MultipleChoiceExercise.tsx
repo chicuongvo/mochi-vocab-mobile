@@ -1,4 +1,5 @@
 import { Exercise } from "@/types/lesson";
+import * as Speech from "expo-speech";
 import { Target, Volume2 } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -26,7 +27,16 @@ export const MultipleChoiceExercise: React.FC<MultipleChoiceProps> = ({
       <Text style={styles.questionWord}>{exercise.word.word}</Text>
       <Text style={styles.pronunciation}>{exercise.word.pronunciation}</Text>
 
-      <TouchableOpacity style={styles.audioButton}>
+      <TouchableOpacity
+        style={styles.audioButton}
+        onPress={() => {
+          Speech.speak(exercise.word.word, {
+            language: "en",
+            pitch: 1,
+            rate: 1,
+          });
+        }}
+      >
         <Volume2 size={20} color="#FFFFFF" />
         <Text style={styles.audioButtonText}>🔊 Hear pronunciation</Text>
       </TouchableOpacity>

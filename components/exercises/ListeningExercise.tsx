@@ -1,4 +1,5 @@
 import { Exercise } from "@/types/lesson";
+import * as Speech from "expo-speech";
 import { Headphones, Volume2 } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -19,7 +20,17 @@ export const ListeningExercise: React.FC<ListeningProps> = ({
         <Text style={styles.exerciseTitle}>Listen and repeat</Text>
       </View>
 
-      <TouchableOpacity style={styles.playButton}>
+      <TouchableOpacity
+        style={styles.playButton}
+        onPress={() => {
+          Speech.stop(); 
+          Speech.speak(exercise.word.word, {
+            language: "en", 
+            pitch: 1,
+            rate: 1,
+          });
+        }}
+      >
         <Volume2 size={48} color="#FFFFFF" />
       </TouchableOpacity>
 

@@ -1,4 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
+import * as Speech from "expo-speech";
 import {
   ArrowRight,
   BookOpen,
@@ -509,7 +510,17 @@ export default function NotebookScreen() {
             </Text>
             <Text style={styles.partOfSpeech}>{searchResult.partOfSpeech}</Text>
           </View>
-          <TouchableOpacity style={styles.playButton}>
+          <TouchableOpacity
+            style={styles.playButton}
+            onPress={() => {
+              Speech.stop();
+              Speech.speak(searchResult.word, {
+                language: "en",
+                rate: 1,
+                pitch: 1,
+              });
+            }}
+          >
             <Volume2 size={20} color="#FF6B9D" />
           </TouchableOpacity>
         </View>
@@ -574,7 +585,17 @@ export default function NotebookScreen() {
                   </View>
                 ) : null}
               </View>
-              <TouchableOpacity style={styles.playButtonSmall}>
+              <TouchableOpacity
+                style={styles.playButtonSmall}
+                onPress={() => {
+                  Speech.stop();
+                  Speech.speak(word.word, {
+                    language: "en",
+                    rate: 1,
+                    pitch: 1,
+                  });
+                }}
+              >
                 <Volume2 size={16} color="#7F8C8D" />
               </TouchableOpacity>
             </View>
@@ -639,7 +660,17 @@ export default function NotebookScreen() {
             </View>
           ) : null}
         </View>
-        <TouchableOpacity style={styles.playButtonSmall}>
+        <TouchableOpacity
+          style={styles.playButtonSmall}
+          onPress={() => {
+            Speech.stop();
+            Speech.speak(word.word, {
+              language: "en",
+              rate: 1,
+              pitch: 1,
+            });
+          }}
+        >
           <Volume2 size={16} color="#7F8C8D" />
         </TouchableOpacity>
       </View>
@@ -730,7 +761,17 @@ export default function NotebookScreen() {
             >
               <View style={styles.cardContent}>
                 <Text style={styles.flashcardWord}>{currentWord.word}</Text>
-                <TouchableOpacity style={styles.soundButton}>
+                <TouchableOpacity
+                  style={styles.soundButton}
+                  onPress={() => {
+                    Speech.stop();
+                    Speech.speak(currentWord.word, {
+                      language: "en",
+                      rate: 1,
+                      pitch: 1,
+                    });
+                  }}
+                >
                   <Volume2 size={24} color="#FF6B9D" />
                 </TouchableOpacity>
                 <Text style={styles.flashcardPronunciation}>

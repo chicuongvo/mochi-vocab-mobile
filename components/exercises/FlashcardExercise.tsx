@@ -1,5 +1,6 @@
 import { Exercise } from "@/types/lesson";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Speech from "expo-speech";
 import { Volume2 } from "lucide-react-native";
 import React from "react";
 import {
@@ -54,7 +55,17 @@ export const FlashcardExercise: React.FC<FlashcardProps> = ({
         >
           <View style={styles.cardContent}>
             <Text style={styles.wordTitle}>{exercise.word.word}</Text>
-            <TouchableOpacity style={styles.soundButton}>
+            <TouchableOpacity
+              style={styles.soundButton}
+              onPress={() => {
+                Speech.stop(); 
+                Speech.speak(exercise.word.word, {
+                  language: "en", 
+                  pitch: 1,
+                  rate: 1,
+                });
+              }}
+            >
               <Volume2 size={24} color="#FF6B9D" />
             </TouchableOpacity>
             <Text style={styles.pronunciation}>

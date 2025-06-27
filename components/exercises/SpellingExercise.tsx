@@ -1,4 +1,5 @@
 import { Exercise } from "@/types/lesson";
+import * as Speech from "expo-speech";
 import { PenTool, Volume2 } from "lucide-react-native";
 import React from "react";
 import {
@@ -32,7 +33,17 @@ export const SpellingExercise: React.FC<SpellingProps> = ({
       <Text style={styles.spellingDefinition}>{exercise.word.definition}</Text>
       <Text style={styles.pronunciation}>{exercise.word.pronunciation}</Text>
 
-      <TouchableOpacity style={styles.audioButton}>
+      <TouchableOpacity
+        style={styles.audioButton}
+        onPress={() => {
+          Speech.stop(); 
+          Speech.speak(exercise.word.word, {
+            language: "en", 
+            pitch: 1,
+            rate: 1,
+          });
+        }}
+      >
         <Volume2 size={16} color="#FFFFFF" />
         <Text style={styles.audioButtonText}>🔊 Hear pronunciation</Text>
       </TouchableOpacity>
