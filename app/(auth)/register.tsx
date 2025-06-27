@@ -1,7 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Lock, Mail, User } from "lucide-react-native";
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function RegisterScreen() {
   return (
@@ -19,7 +19,11 @@ export default function RegisterScreen() {
             Create an account to start learning with Mochi & Michi!
           </Text>
           <View style={styles.mascotContainer}>
-            <Text style={styles.mascot}>🍡🐱</Text>
+            <Image
+              source={require("../../assets/images/Logo_MochiApp.png")} 
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
         </View>
       </LinearGradient>
@@ -170,7 +174,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#FFFFFF",
   },
-  loginPrompt: { // Thêm định nghĩa cho loginPrompt
+  loginPrompt: { 
     flexDirection: "row",
     marginTop: 20,
   },
@@ -183,4 +187,9 @@ const styles = StyleSheet.create({
     color: "#9B59B6",
     fontWeight: "600",
   },
+  logo: {
+  width: 100,
+  height: 100,
+  borderRadius: 20, 
+},
 });
