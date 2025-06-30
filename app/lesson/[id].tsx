@@ -1,9 +1,4 @@
 import { ActionButtons } from "@/components/ActionButtons";
-import GlobalLoading from "@/components/GlobalLoading";
-import { LessonHeader } from "@/components/LessonHeader";
-import { LessonStats } from "@/components/LessonStats";
-import { playSound } from "@/utils/playSound";
-
 import {
   FillBlankExercise,
   FlashcardExercise,
@@ -12,9 +7,14 @@ import {
   SpellingExercise,
   WordOrderExercise,
 } from "@/components/exercises";
+import MatchingExercise from "@/components/exercises/MatchingExercise";
+import GlobalLoading from "@/components/GlobalLoading";
+import { LessonHeader } from "@/components/LessonHeader";
+import { LessonStats } from "@/components/LessonStats";
 import { useCourse } from "@/contexts/CourseContext";
 import { Exercise } from "@/types/lesson";
 import { generateExercises } from "@/utils/generateExercises";
+import { playSound } from "@/utils/playSound";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -191,6 +191,22 @@ export default function LessonScreen() {
             showAnswer={showAnswer}
           />
         );
+      case "matching": // Thêm case mới
+      return (
+        <MatchingExercise
+          exercise={currentExercise}
+          onComplete={(isCorrect) => {
+            setShowAnswer(true); // Hiển thị kết quả sau khi hoàn thành
+            // Có thể thêm logic để cập nhật điểm hoặc tiến trình
+            // Ví dụ: updateProgress(isCorrect);
+            setTimeout(() => {
+              // Chuyển sang bài tập tiếp theo sau 1 giây
+              setCurrentExerciseIndex((prev) => prev + 1);
+              setShowAnswer(false); // Reset trạng thái
+            }, 1000);
+          }}
+        />
+      );
       case "spelling":
         return (
           <SpellingExercise

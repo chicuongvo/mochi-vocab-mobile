@@ -8,13 +8,32 @@ export const generateExercises = (currentWords: Word[]): Exercise[] => {
     "multiple-choice",
     "fill-blank",
     "word-order",
+    "speaking",
+    "matching",
   ];
+
+  // Tạo bài tập matching
+  if (currentWords.length >= 4) {
+    const selectedWords = currentWords
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4); // Chọn ngẫu nhiên 4 từ
+    const definitions = selectedWords
+      .map((word) => word.definition)
+      .sort(() => Math.random() - 0.5); // Xáo trộn định nghĩa
+
+    exercises.push({
+      type: "matching",
+      word: selectedWords[0], // Word chính chỉ để tham chiếu
+      matchingWords: selectedWords,
+      matchingDefinitions: definitions,
+    });
+  }
 
   currentWords.forEach(word => {
     // Add 2-3 different exercise types per word
     const selectedTypes = [...exerciseTypes]
       .sort(() => Math.random() - 0.5)
-      .slice(0, 1);
+      .slice(0, 2);
 
     selectedTypes.forEach(type => {
       switch (type) {
@@ -74,6 +93,9 @@ export const generateExercises = (currentWords: Word[]): Exercise[] => {
           exercises.push({ type, word });
           break;
         case "spelling":
+          exercises.push({ type, word, correctAnswer: word.word });
+          break;
+        case "speaking":
           exercises.push({ type, word, correctAnswer: word.word });
           break;
       }

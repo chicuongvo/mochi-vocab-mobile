@@ -4,7 +4,9 @@ export type ExerciseType =
   | "fill-blank"
   | "word-order"
   | "listening"
-  | "spelling";
+  | "spelling"
+  | "speaking"
+  | "matching";
 
 export interface Word {
   id: number;
@@ -27,4 +29,6 @@ export interface Exercise {
   shuffledWords?: string[];
   originalSentence?: string;
   ipaHint?: string;
+  matchingWords?: Word[]; 
+  matchingDefinitions?: string[]; 
 }
