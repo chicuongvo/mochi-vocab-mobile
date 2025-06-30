@@ -1,3 +1,4 @@
+import GlobalLoading from "@/components/GlobalLoading";
 import { useCourse } from "@/contexts/CourseContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -33,16 +34,7 @@ export default function CoursesScreen() {
   };
 
   if (loading) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text style={styles.loadingText}>Loading courses...</Text>
-      </View>
-    );
+    return <GlobalLoading />;
   }
 
   if (error) {
@@ -367,11 +359,6 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 30,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: "#7F8C8D",
-    textAlign: "center",
   },
   errorText: {
     fontSize: 18,
