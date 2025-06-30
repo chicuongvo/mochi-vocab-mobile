@@ -28,3 +28,34 @@ export interface Word {
   order_index: number;
   created_at: string;
 }
+
+export interface UserVocabulary {
+  id: string;
+  user_id: string;
+  word: string;
+  pronunciation?: string;
+  definition: string;
+  example?: string;
+  topic?: string;
+  date_added: string;
+  is_favorite: boolean;
+  review_count: number;
+  last_reviewed?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Helper type for creating/updating vocabulary
+export interface CreateUserVocabulary {
+  word: string;
+  pronunciation?: string;
+  definition: string;
+  example?: string;
+  topic?: string;
+  is_favorite?: boolean;
+}
+
+export interface UpdateUserVocabulary extends Partial<CreateUserVocabulary> {
+  review_count?: number;
+  last_reviewed?: string;
+}
