@@ -9,9 +9,13 @@ export class VocabularyService {
   // Lấy tất cả vocabulary của user
   static async getUserVocabularies(): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .order("date_added", { ascending: false });
 
       if (error) throw error;
@@ -27,9 +31,13 @@ export class VocabularyService {
     topic: string
   ): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .eq("topic", topic)
         .order("date_added", { ascending: false });
 
@@ -44,9 +52,13 @@ export class VocabularyService {
   // Lấy favorite vocabularies
   static async getFavoriteVocabularies(): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .eq("is_favorite", true)
         .order("date_added", { ascending: false });
 
@@ -63,9 +75,13 @@ export class VocabularyService {
     limit: number = 10
   ): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .order("date_added", { ascending: false })
         .limit(limit);
 
@@ -164,10 +180,21 @@ export class VocabularyService {
   // Cập nhật review stats
   static async updateReviewStats(id: string): Promise<UserVocabulary> {
     try {
+      // First get the current review count
+      const { data: currentData, error: fetchError } = await supabase
+        .from("user_vocabularies")
+        .select("review_count")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const newReviewCount = (currentData?.review_count || 0) + 1;
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .update({
-          review_count: supabase.sql`review_count + 1`,
+          review_count: newReviewCount,
           last_reviewed: new Date().toISOString().split("T")[0],
         })
         .eq("id", id)
@@ -185,9 +212,13 @@ export class VocabularyService {
   // Tìm kiếm vocabulary
   static async searchVocabularies(query: string): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .or(`word.ilike.%${query}%, definition.ilike.%${query}%`)
         .order("date_added", { ascending: false });
 
@@ -202,9 +233,13 @@ export class VocabularyService {
   // Lấy vocabulary cần review (chưa review nhiều)
   static async getVocabulariesForReview(): Promise<UserVocabulary[]> {
     try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("user_vocabularies")
         .select("*")
+        .eq("user_id", user.user.id)
         .or("is_favorite.eq.true,review_count.lt.3")
         .order("last_reviewed", { ascending: true, nullsFirst: true });
 
@@ -224,10 +259,14 @@ export class VocabularyService {
     recentlyAdded: number; // Trong 7 ngày qua
   }> {
     try {
-      // Lấy tất cả vocabulary
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("User not authenticated");
+
+      // Lấy tất cả vocabulary của user
       const { data: allVocabs, error } = await supabase
         .from("user_vocabularies")
-        .select("topic, is_favorite, date_added");
+        .select("topic, is_favorite, date_added")
+        .eq("user_id", user.user.id);
 
       if (error) throw error;
 
