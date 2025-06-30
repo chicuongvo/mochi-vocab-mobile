@@ -37,6 +37,7 @@ export interface UserVocabulary {
   definition: string;
   example?: string;
   topic?: string;
+  audio_url?: string; // URL for pronunciation audio
   date_added: string;
   is_favorite: boolean;
   review_count: number;
@@ -52,6 +53,7 @@ export interface CreateUserVocabulary {
   definition: string;
   example?: string;
   topic?: string;
+  audio_url?: string; // URL for pronunciation audio
   is_favorite?: boolean;
 }
 
