@@ -16,7 +16,7 @@ import {
   X,
   Circle as XCircle,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -28,6 +28,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { useAuth } from "../../contexts/AuthContext";
+import { VocabularyService } from "../../services/vocabulary.service";
+import { UserVocabulary } from "../../types/database";
 
 interface Word {
   id: string;
@@ -51,6 +55,7 @@ interface SearchResult {
 }
 
 export default function NotebookScreen() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<
     "all" | "myVocabs" | "topic" | "recent"
@@ -68,6 +73,11 @@ export default function NotebookScreen() {
   const [isFlipping, setIsFlipping] = useState(false);
   const [filteredVocabulary, setFilteredVocabulary] = useState<Word[]>([]);
 
+  // Loading states
+  const [isLoadingVocabs, setIsLoadingVocabs] = useState(false);
+  const [isAddingWord, setIsAddingWord] = useState(false);
+  const [isUpdatingWord, setIsUpdatingWord] = useState(false);
+
   // Animation refs
   const fabScale = useRef(new Animated.Value(1)).current;
   const searchResultOpacity = useRef(new Animated.Value(0)).current;
@@ -83,75 +93,11 @@ export default function NotebookScreen() {
     topic: "",
   });
 
-  // State for My Vocabs (user-defined words)
-  const [myVocabs, setMyVocabs] = useState<Word[]>([
-    {
-      id: "1",
-      word: "Serendipity",
-      pronunciation: "/ˌserənˈdipədē/",
-      definition:
-        "The occurrence and development of events by chance in a happy or beneficial way",
-      example:
-        "A fortunate stroke of serendipity brought the two old friends together.",
-      topic: "Advanced",
-      dateAdded: "2024-01-15",
-      isFavorite: true,
-      reviewCount: 3,
-      lastReviewed: "2024-01-20",
-    },
-    {
-      id: "2",
-      word: "Ephemeral",
-      pronunciation: "/əˈfem(ə)rəl/",
-      definition: "Lasting for a very short time",
-      example:
-        "The beauty of cherry blossoms is ephemeral, lasting only a few weeks.",
-      topic: "Poetry",
-      dateAdded: "2024-01-14",
-      isFavorite: false,
-      reviewCount: 1,
-      lastReviewed: "2024-01-18",
-    },
-    {
-      id: "3",
-      word: "Wanderlust",
-      pronunciation: "/ˈwändərˌləst/",
-      definition: "A strong desire to travel and explore the world",
-      example: "Her wanderlust led her to visit over 30 countries.",
-      topic: "Travel",
-      dateAdded: "2024-01-13",
-      isFavorite: true,
-      reviewCount: 5,
-      lastReviewed: "2024-01-19",
-    },
-    {
-      id: "4",
-      word: "Mellifluous",
-      pronunciation: "/məˈliflo͞oəs/",
-      definition: "Sweet or musical; pleasant to hear",
-      example: "The singer's mellifluous voice captivated the entire audience.",
-      topic: "Music",
-      dateAdded: "2024-01-12",
-      isFavorite: false,
-      reviewCount: 2,
-      lastReviewed: "2024-01-17",
-    },
-    {
-      id: "5",
-      word: "Resilience",
-      pronunciation: "/rɪˈzɪljəns/",
-      definition: "The capacity to recover quickly from difficulties",
-      example: "Her resilience helped her overcome many challenges.",
-      topic: "Psychology",
-      dateAdded: "2024-01-11",
-      isFavorite: true,
-      reviewCount: 4,
-      lastReviewed: "2024-01-21",
-    },
-  ]);
+  // State for My Vocabs (now loaded from Supabase)
+  const [myVocabs, setMyVocabs] = useState<Word[]>([]);
 
   // State for All Words (dictionary default words)
-  const [allWordsDictionary, setAllWordsDictionary] = useState<Word[]>([
+  const [allWordsDictionary] = useState<Word[]>([
     {
       id: "6",
       word: "Benevolent",
@@ -174,40 +120,52 @@ export default function NotebookScreen() {
       isFavorite: false,
       reviewCount: 0,
     },
-    {
-      id: "8",
-      word: "Luminous",
-      pronunciation: "/ˈlo͞omənəs/",
-      definition: "Bright or shining, especially in the dark",
-      example: "The luminous moon lit up the night sky.",
-      topic: "Nature",
-      dateAdded: "2023-12-03",
-      isFavorite: false,
-      reviewCount: 0,
-    },
-    {
-      id: "9",
-      word: "Pragmatic",
-      pronunciation: "/praɡˈmadik/",
-      definition: "Dealing with things sensibly and realistically",
-      example: "His pragmatic approach solved the problem efficiently.",
-      topic: "Business",
-      dateAdded: "2023-12-04",
-      isFavorite: false,
-      reviewCount: 0,
-    },
-    {
-      id: "10",
-      word: "Tenacious",
-      pronunciation: "/təˈnāSHəs/",
-      definition: "Persistent in maintaining or holding to something",
-      example: "Her tenacious effort led to her success.",
-      topic: "Personality",
-      dateAdded: "2023-12-05",
-      isFavorite: false,
-      reviewCount: 0,
-    },
+    // Keep some default dictionary words for demonstration
   ]);
+
+  // Load user vocabularies from Supabase when component mounts
+  const loadUserVocabularies = useCallback(async () => {
+    if (!user) return;
+
+    setIsLoadingVocabs(true);
+    try {
+      const vocabularies = await VocabularyService.getUserVocabularies();
+
+      // Transform UserVocabulary to Word format
+      const transformedWords: Word[] = vocabularies.map(
+        (vocab: UserVocabulary) => ({
+          id: vocab.id,
+          word: vocab.word,
+          pronunciation: vocab.pronunciation || "/ˈsæmpəl/",
+          definition: vocab.definition,
+          example: vocab.example || `Example sentence with ${vocab.word}.`,
+          topic: vocab.topic || "General",
+          dateAdded:
+            vocab.date_added?.split("T")[0] ||
+            new Date().toISOString().split("T")[0],
+          isFavorite: vocab.is_favorite || false,
+          reviewCount: vocab.review_count || 0,
+          lastReviewed: vocab.last_reviewed?.split("T")[0],
+        })
+      );
+
+      setMyVocabs(transformedWords);
+    } catch (error) {
+      console.error("Error loading vocabularies:", error);
+      Alert.alert(
+        "Error",
+        "Failed to load your vocabularies. Please try again."
+      );
+    } finally {
+      setIsLoadingVocabs(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserVocabularies();
+    }
+  }, [user, loadUserVocabularies]);
 
   const searchDictionary = async (
     query: string
@@ -231,7 +189,9 @@ export default function NotebookScreen() {
         word: result.word,
         pronunciation: result.phonetics[0]?.text || "/ˈsæmpəl/",
         definition: result.meanings[0].definitions[0].definition,
-        example: result.meanings[0].definitions[0].example || `Example sentence with "${query}".`,
+        example:
+          result.meanings[0].definitions[0].example ||
+          `Example sentence with "${query}".`,
         partOfSpeech: result.meanings[0].partOfSpeech,
       };
     } catch (error) {
@@ -279,7 +239,13 @@ export default function NotebookScreen() {
     }, 500);
 
     return () => clearTimeout(delayedSearch);
-  }, [searchQuery, searchResultOpacity, selectedTab, allWordsDictionary, myVocabs]);
+  }, [
+    searchQuery,
+    searchResultOpacity,
+    selectedTab,
+    allWordsDictionary,
+    myVocabs,
+  ]);
 
   useEffect(() => {
     const pulse = () => {
@@ -344,20 +310,45 @@ export default function NotebookScreen() {
     setShowReviewModal(true);
   };
 
-  const handleReviewAnswer = (isCorrect: boolean) => {
+  const handleReviewAnswer = async (isCorrect: boolean) => {
     const currentWord = reviewWords[currentReviewIndex];
+    const newReviewCount = (currentWord.reviewCount || 0) + 1;
+    const todayDate = new Date().toISOString().split("T")[0];
 
-    setMyVocabs(prev =>
-      prev.map(word =>
-        word.id === currentWord.id
-          ? {
-              ...word,
-              reviewCount: (word.reviewCount || 0) + 1,
-              lastReviewed: new Date().toISOString().split("T")[0],
-            }
-          : word
-      )
-    );
+    try {
+      // Update in Supabase
+      await VocabularyService.updateVocabulary(currentWord.id, {
+        review_count: newReviewCount,
+        last_reviewed: new Date().toISOString(),
+      });
+
+      // Update local state
+      setMyVocabs(prev =>
+        prev.map(word =>
+          word.id === currentWord.id
+            ? {
+                ...word,
+                reviewCount: newReviewCount,
+                lastReviewed: todayDate,
+              }
+            : word
+        )
+      );
+    } catch (error) {
+      console.error("Error updating review stats:", error);
+      // Continue with local update even if Supabase fails
+      setMyVocabs(prev =>
+        prev.map(word =>
+          word.id === currentWord.id
+            ? {
+                ...word,
+                reviewCount: newReviewCount,
+                lastReviewed: todayDate,
+              }
+            : word
+        )
+      );
+    }
 
     setReviewStats(prev => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
@@ -400,33 +391,56 @@ export default function NotebookScreen() {
     setShowAnswer(!showAnswer);
   };
 
-  const saveWordFromSearch = () => {
-    if (!searchResult) return;
+  const saveWordFromSearch = async () => {
+    if (!searchResult || !user) return;
 
-    const newWordData: Word = {
-      id: Date.now().toString(),
-      word: searchResult.word,
-      pronunciation: searchResult.pronunciation,
-      definition: searchResult.definition,
-      example: searchResult.example,
-      topic: "Dictionary",
-      dateAdded: new Date().toISOString().split("T")[0],
-      isFavorite: false,
-      reviewCount: 0,
-    };
+    setIsAddingWord(true);
+    try {
+      const vocabularyData = {
+        word: searchResult.word,
+        pronunciation: searchResult.pronunciation,
+        definition: searchResult.definition,
+        example: searchResult.example,
+        topic: "Dictionary",
+        is_favorite: false,
+      };
 
-    setMyVocabs(prev => [newWordData, ...prev]);
-    setSearchQuery("");
-    setSearchResult(null);
-    setFilteredVocabulary([]);
+      const newVocab = await VocabularyService.createVocabulary(vocabularyData);
 
-    Alert.alert(
-      "Success! 🎉",
-      `"${searchResult.word}" has been added to your vocabulary!`
-    );
+      // Transform to Word format and add to local state
+      const newWordData: Word = {
+        id: newVocab.id,
+        word: newVocab.word,
+        pronunciation: newVocab.pronunciation || "/ˈsæmpəl/",
+        definition: newVocab.definition,
+        example: newVocab.example || `Example sentence with ${newVocab.word}.`,
+        topic: newVocab.topic || "General",
+        dateAdded:
+          newVocab.date_added?.split("T")[0] ||
+          new Date().toISOString().split("T")[0],
+        isFavorite: newVocab.is_favorite || false,
+        reviewCount: newVocab.review_count || 0,
+        lastReviewed: newVocab.last_reviewed?.split("T")[0],
+      };
+
+      setMyVocabs(prev => [newWordData, ...prev]);
+      setSearchQuery("");
+      setSearchResult(null);
+      setFilteredVocabulary([]);
+
+      Alert.alert(
+        "Success! 🎉",
+        `"${searchResult.word}" has been added to your vocabulary!`
+      );
+    } catch (error) {
+      console.error("Error saving word:", error);
+      Alert.alert("Error", "Failed to save word. Please try again.");
+    } finally {
+      setIsAddingWord(false);
+    }
   };
 
-  const addNewWord = () => {
+  const addNewWord = async () => {
     if (!newWord.word.trim() || !newWord.definition.trim()) {
       Alert.alert(
         "Oops! 😅",
@@ -435,36 +449,64 @@ export default function NotebookScreen() {
       return;
     }
 
-    const wordData: Word = {
-      id: Date.now().toString(),
-      word: newWord.word,
-      pronunciation: newWord.pronunciation || "/ˈsæmpəl/",
-      definition: newWord.definition,
-      example: newWord.example || `Example sentence with ${newWord.word}.`,
-      topic: newWord.topic || "Custom",
-      dateAdded: new Date().toISOString().split("T")[0],
-      isFavorite: false,
-      reviewCount: 0,
-    };
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to add words.");
+      return;
+    }
 
-    setMyVocabs(prev => [wordData, ...prev]);
-    setNewWord({
-      word: "",
-      pronunciation: "",
-      definition: "",
-      example: "",
-      topic: "",
-    });
-    setShowAddModal(false);
+    setIsAddingWord(true);
+    try {
+      const vocabularyData = {
+        word: newWord.word,
+        pronunciation: newWord.pronunciation || "/ˈsæmpəl/",
+        definition: newWord.definition,
+        example: newWord.example || `Example sentence with ${newWord.word}.`,
+        topic: newWord.topic || "Custom",
+        is_favorite: false,
+      };
 
-    Alert.alert(
-      "Awesome! 🌟",
-      `"${wordData.word}" has been added to your collection!`
-    );
+      const newVocab = await VocabularyService.createVocabulary(vocabularyData);
+
+      // Transform to Word format and add to local state
+      const wordData: Word = {
+        id: newVocab.id,
+        word: newVocab.word,
+        pronunciation: newVocab.pronunciation || "/ˈsæmpəl/",
+        definition: newVocab.definition,
+        example: newVocab.example || `Example sentence with ${newVocab.word}.`,
+        topic: newVocab.topic || "General",
+        dateAdded:
+          newVocab.date_added?.split("T")[0] ||
+          new Date().toISOString().split("T")[0],
+        isFavorite: newVocab.is_favorite || false,
+        reviewCount: newVocab.review_count || 0,
+        lastReviewed: newVocab.last_reviewed?.split("T")[0],
+      };
+
+      setMyVocabs(prev => [wordData, ...prev]);
+      setNewWord({
+        word: "",
+        pronunciation: "",
+        definition: "",
+        example: "",
+        topic: "",
+      });
+      setShowAddModal(false);
+
+      Alert.alert(
+        "Awesome! 🌟",
+        `"${wordData.word}" has been added to your collection!`
+      );
+    } catch (error) {
+      console.error("Error adding word:", error);
+      Alert.alert("Error", "Failed to add word. Please try again.");
+    } finally {
+      setIsAddingWord(false);
+    }
   };
 
-  const editWord = () => {
-    if (!editingWord) return;
+  const editWord = async () => {
+    if (!editingWord || !user) return;
 
     if (!editingWord.word.trim() || !editingWord.definition.trim()) {
       Alert.alert(
@@ -474,28 +516,47 @@ export default function NotebookScreen() {
       return;
     }
 
-    setMyVocabs(prev =>
-      prev.map(word =>
-        word.id === editingWord.id
-          ? {
-              ...word,
-              word: editingWord.word,
-              pronunciation: editingWord.pronunciation,
-              definition: editingWord.definition,
-              example: editingWord.example,
-              topic: editingWord.topic,
-            }
-          : word
-      )
-    );
+    setIsUpdatingWord(true);
+    try {
+      const updateData = {
+        word: editingWord.word,
+        pronunciation: editingWord.pronunciation,
+        definition: editingWord.definition,
+        example: editingWord.example,
+        topic: editingWord.topic,
+      };
 
-    setShowEditModal(false);
-    setEditingWord(null);
+      await VocabularyService.updateVocabulary(editingWord.id, updateData);
 
-    Alert.alert(
-      "Updated! 🎉",
-      `"${editingWord.word}" has been updated successfully!`
-    );
+      // Update local state
+      setMyVocabs(prev =>
+        prev.map(word =>
+          word.id === editingWord.id
+            ? {
+                ...word,
+                word: editingWord.word,
+                pronunciation: editingWord.pronunciation,
+                definition: editingWord.definition,
+                example: editingWord.example,
+                topic: editingWord.topic,
+              }
+            : word
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingWord(null);
+
+      Alert.alert(
+        "Updated! 🎉",
+        `"${editingWord.word}" has been updated successfully!`
+      );
+    } catch (error) {
+      console.error("Error updating word:", error);
+      Alert.alert("Error", "Failed to update word. Please try again.");
+    } finally {
+      setIsUpdatingWord(false);
+    }
   };
 
   const deleteWord = (id: string) => {
@@ -507,30 +568,72 @@ export default function NotebookScreen() {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () =>
-            setMyVocabs(prev => prev.filter(w => w.id !== id)),
+          onPress: async () => {
+            try {
+              await VocabularyService.deleteVocabulary(id);
+              setMyVocabs(prev => prev.filter(w => w.id !== id));
+              Alert.alert(
+                "Deleted! 🗑️",
+                "Word has been removed from your collection."
+              );
+            } catch (error) {
+              console.error("Error deleting word:", error);
+              Alert.alert("Error", "Failed to delete word. Please try again.");
+            }
+          },
         },
       ]
     );
   };
 
-  const toggleFavorite = (id: string) => {
-    setMyVocabs(prev =>
-      prev.map(word =>
-        word.id === id ? { ...word, isFavorite: !word.isFavorite } : word
-      )
-    );
+  const toggleFavorite = async (id: string) => {
+    try {
+      const word = myVocabs.find(w => w.id === id);
+      if (!word) return;
+
+      const newFavoriteStatus = !word.isFavorite;
+
+      await VocabularyService.updateVocabulary(id, {
+        is_favorite: newFavoriteStatus,
+      });
+
+      // Update local state
+      setMyVocabs(prev =>
+        prev.map(word =>
+          word.id === id ? { ...word, isFavorite: newFavoriteStatus } : word
+        )
+      );
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+      Alert.alert(
+        "Error",
+        "Failed to update favorite status. Please try again."
+      );
+    }
   };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyMascot}>🍡🐱</Text>
-      <Text style={styles.emptyTitle}>
-        Search for any word and save it to your collection!
-      </Text>
-      <Text style={styles.emptySubtitle}>
-        Mochi & Michi are excited to help you build your vocabulary! ✨
-      </Text>
+      {!user ? (
+        <>
+          <Text style={styles.emptyTitle}>
+            Please log in to save and manage your vocabulary!
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            Mochi & Michi are waiting to help you build your vocabulary! ✨
+          </Text>
+        </>
+      ) : (
+        <>
+          <Text style={styles.emptyTitle}>
+            Search for any word and save it to your collection!
+          </Text>
+          <Text style={styles.emptySubtitle}>
+            Mochi & Michi are excited to help you build your vocabulary! ✨
+          </Text>
+        </>
+      )}
     </View>
   );
 
@@ -574,8 +677,12 @@ export default function NotebookScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.saveButton}
+          style={[
+            styles.saveButton,
+            (isAddingWord || !user) && styles.disabledButton,
+          ]}
           onPress={saveWordFromSearch}
+          disabled={isAddingWord || !user}
         >
           <LinearGradient
             colors={["#FF6B9D", "#FF8C42"]}
@@ -583,8 +690,16 @@ export default function NotebookScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Save size={18} color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Save to Collection</Text>
+            {isAddingWord ? (
+              <Text style={styles.saveButtonText}>Saving...</Text>
+            ) : !user ? (
+              <Text style={styles.saveButtonText}>Login Required</Text>
+            ) : (
+              <>
+                <Save size={18} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>Save to Collection</Text>
+              </>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
@@ -902,28 +1017,35 @@ export default function NotebookScreen() {
 
   return (
     <View style={styles.container}>
+      {isLoadingVocabs && (
+        <View style={styles.loadingOverlay}>
+          <Text style={styles.loadingOverlayText}>
+            Loading your vocabulary... 📚
+          </Text>
+        </View>
+      )}
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-        colors={["#9B59B6", "#8E44AD"]}
-        style={styles.header}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.headerTitle}>My Vocabulary 📚</Text>
-            <Text style={styles.headerSubtitle}>
-              Your personal word collection & dictionary
-            </Text>
+          colors={["#9B59B6", "#8E44AD"]}
+          style={styles.header}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.headerTitle}>My Vocabulary 📚</Text>
+              <Text style={styles.headerSubtitle}>
+                Your personal word collection & dictionary
+              </Text>
+            </View>
+            <View style={styles.mascotContainer}>
+              <Text style={styles.mascot}>🍡</Text>
+            </View>
           </View>
-          <View style={styles.mascotContainer}>
-            <Text style={styles.mascot}>🍡</Text>
-          </View>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <Search size={20} color="#7F8C8D" />
@@ -945,7 +1067,9 @@ export default function NotebookScreen() {
 
           {renderSearchResult()}
 
-          {!searchQuery && !searchResult && filteredVocabulary.length === 0 ? renderEmptyState() : null}
+          {!searchQuery && !searchResult && filteredVocabulary.length === 0
+            ? renderEmptyState()
+            : null}
         </View>
 
         {myVocabs.length > 0 ? (
@@ -975,10 +1099,12 @@ export default function NotebookScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={styles.tabContainer}>
               <TouchableOpacity
-                style={[
-                  styles.tab,
-                  selectedTab === "all" ? styles.activeTab : null,
-                ].filter(Boolean) as any}
+                style={
+                  [
+                    styles.tab,
+                    selectedTab === "all" ? styles.activeTab : null,
+                  ].filter(Boolean) as any
+                }
                 onPress={() => setSelectedTab("all")}
               >
                 <BookOpen
@@ -986,20 +1112,24 @@ export default function NotebookScreen() {
                   color={selectedTab === "all" ? "#FFFFFF" : "#7F8C8D"}
                 />
                 <Text
-                  style={[
-                    styles.tabText,
-                    selectedTab === "all" ? styles.activeTabText : null,
-                  ].filter(Boolean) as any}
+                  style={
+                    [
+                      styles.tabText,
+                      selectedTab === "all" ? styles.activeTabText : null,
+                    ].filter(Boolean) as any
+                  }
                 >
                   All Words
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.tab,
-                  selectedTab === "myVocabs" ? styles.activeTab : null,
-                ].filter(Boolean) as any}
+                style={
+                  [
+                    styles.tab,
+                    selectedTab === "myVocabs" ? styles.activeTab : null,
+                  ].filter(Boolean) as any
+                }
                 onPress={() => setSelectedTab("myVocabs")}
               >
                 <BookOpen
@@ -1007,20 +1137,24 @@ export default function NotebookScreen() {
                   color={selectedTab === "myVocabs" ? "#FFFFFF" : "#7F8C8D"}
                 />
                 <Text
-                  style={[
-                    styles.tabText,
-                    selectedTab === "myVocabs" ? styles.activeTabText : null,
-                  ].filter(Boolean) as any}
+                  style={
+                    [
+                      styles.tabText,
+                      selectedTab === "myVocabs" ? styles.activeTabText : null,
+                    ].filter(Boolean) as any
+                  }
                 >
                   My Vocabs
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.tab,
-                  selectedTab === "topic" ? styles.activeTab : null,
-                ].filter(Boolean) as any}
+                style={
+                  [
+                    styles.tab,
+                    selectedTab === "topic" ? styles.activeTab : null,
+                  ].filter(Boolean) as any
+                }
                 onPress={() => setSelectedTab("topic")}
               >
                 <Hash
@@ -1028,20 +1162,24 @@ export default function NotebookScreen() {
                   color={selectedTab === "topic" ? "#FFFFFF" : "#7F8C8D"}
                 />
                 <Text
-                  style={[
-                    styles.tabText,
-                    selectedTab === "topic" ? styles.activeTabText : null,
-                  ].filter(Boolean) as any}
+                  style={
+                    [
+                      styles.tabText,
+                      selectedTab === "topic" ? styles.activeTabText : null,
+                    ].filter(Boolean) as any
+                  }
                 >
                   By Topic
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.tab,
-                  selectedTab === "recent" ? styles.activeTab : null,
-                ].filter(Boolean) as any}
+                style={
+                  [
+                    styles.tab,
+                    selectedTab === "recent" ? styles.activeTab : null,
+                  ].filter(Boolean) as any
+                }
                 onPress={() => setSelectedTab("recent")}
               >
                 <Clock
@@ -1049,10 +1187,12 @@ export default function NotebookScreen() {
                   color={selectedTab === "recent" ? "#FFFFFF" : "#7F8C8D"}
                 />
                 <Text
-                  style={[
-                    styles.tabText,
-                    selectedTab === "recent" ? styles.activeTabText : null,
-                  ].filter(Boolean) as any}
+                  style={
+                    [
+                      styles.tabText,
+                      selectedTab === "recent" ? styles.activeTabText : null,
+                    ].filter(Boolean) as any
+                  }
                 >
                   Recently Added
                 </Text>
@@ -1081,7 +1221,19 @@ export default function NotebookScreen() {
       </ScrollView>
 
       <Animated.View style={[styles.fab, { transform: [{ scale: fabScale }] }]}>
-        <TouchableOpacity onPress={() => setShowAddModal(true)}>
+        <TouchableOpacity
+          onPress={() => {
+            if (!user) {
+              Alert.alert(
+                "Login Required",
+                "Please log in to add words to your vocabulary."
+              );
+              return;
+            }
+            setShowAddModal(true);
+          }}
+          style={!user ? styles.disabledButton : undefined}
+        >
           <LinearGradient
             colors={["#2ECC71", "#27AE60"]}
             style={styles.fabGradient}
@@ -1104,8 +1256,14 @@ export default function NotebookScreen() {
               <X size={24} color="#7F8C8D" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Add New Word ✨</Text>
-            <TouchableOpacity onPress={addNewWord}>
-              <Text style={styles.saveText}>Save</Text>
+            <TouchableOpacity
+              onPress={addNewWord}
+              disabled={isAddingWord}
+              style={isAddingWord ? styles.disabledButton : undefined}
+            >
+              <Text style={styles.saveText}>
+                {isAddingWord ? "Saving..." : "Save"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -1193,8 +1351,14 @@ export default function NotebookScreen() {
               <X size={24} color="#7F8C8D" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Edit Word ✏️</Text>
-            <TouchableOpacity onPress={editWord}>
-              <Text style={styles.saveText}>Save</Text>
+            <TouchableOpacity
+              onPress={editWord}
+              disabled={isUpdatingWord}
+              style={isUpdatingWord ? styles.disabledButton : undefined}
+            >
+              <Text style={styles.saveText}>
+                {isUpdatingWord ? "Saving..." : "Save"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -1999,6 +2163,29 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "bold",
     marginLeft: 8,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  loadingOverlayText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    textAlign: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
   },
   bottomPadding: {
     height: 100,
