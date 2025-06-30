@@ -57,7 +57,6 @@ interface SearchResult {
 export default function NotebookScreen() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]); // State cho gợi ý từ
   const [selectedTab, setSelectedTab] = useState<
     "all" | "myVocabs" | "topic" | "recent"
   >("all");
@@ -209,23 +208,6 @@ export default function NotebookScreen() {
     }
   };
 
-  const getSuggestions = (query: string) => {
-    if (!query.trim()) {
-      setSuggestions([]);
-      return;
-    }
-
-    const queryLower = query.toLowerCase();
-    const allWords = [...allWordsDictionary, ...myVocabs];
-    const filteredSuggestions = allWords
-      .filter(word => word.word.toLowerCase().startsWith(queryLower))
-      .map(word => word.word)
-      .filter((value, index, self) => self.indexOf(value) === index)
-      .slice(0, 5);
-
-    setSuggestions(filteredSuggestions);
-  };
-
   useEffect(() => {
     const delayedSearch = setTimeout(async () => {
       if (searchQuery.trim()) {
@@ -244,8 +226,6 @@ export default function NotebookScreen() {
         const result = await searchDictionary(searchQuery);
         setSearchResult(result);
 
-        getSuggestions(searchQuery);
-
         Animated.timing(searchResultOpacity, {
           toValue: 1,
           duration: 300,
@@ -254,7 +234,6 @@ export default function NotebookScreen() {
       } else {
         setFilteredVocabulary([]);
         setSearchResult(null);
-        setSuggestions([]);
         searchResultOpacity.setValue(0);
       }
     }, 500);
@@ -727,27 +706,6 @@ export default function NotebookScreen() {
     );
   };
 
-  const renderSuggestions = () => {
-    if (suggestions.length === 0) return null;
-
-    return (
-      <View style={styles.suggestionsContainer}>
-        {suggestions.map((suggestion, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.suggestionItem}
-            onPress={() => {
-              setSearchQuery(suggestion);
-              setSuggestions([]);
-            }}
-          >
-            <Text style={styles.suggestionText}>{suggestion}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
   const renderVocabularyResults = () => {
     if (filteredVocabulary.length === 0) return null;
 
@@ -1104,8 +1062,6 @@ export default function NotebookScreen() {
               </View>
             ) : null}
           </View>
-
-          {renderSuggestions()}
 
           {renderVocabularyResults()}
 
@@ -1605,29 +1561,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-  },
-  suggestionsContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    maxHeight: 150,
-  },
-  suggestionItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ECF0F1",
-  },
-  suggestionText: {
-    fontSize: 16,
-    color: "#2C3E50",
   },
   searchResultCard: {
     backgroundColor: "#FFFFFF",
