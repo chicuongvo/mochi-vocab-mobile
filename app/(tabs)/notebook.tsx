@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpen,
   CircleCheck as CheckCircle,
+  CircleX,
   Clock,
   CreditCard as Edit3,
   Hash,
@@ -14,7 +15,6 @@ import {
   Trash2,
   Volume2,
   X,
-  Circle as XCircle,
 } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -66,8 +66,8 @@ export default function NotebookScreen() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<
-    "all" | "myVocabs" | "topic" | "recent"
-  >("all");
+    "fav" | "myVocabs" | "topic" | "recent"
+  >("myVocabs");
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -111,31 +111,7 @@ export default function NotebookScreen() {
   const [myVocabs, setMyVocabs] = useState<Word[]>([]);
 
   // State for All Words (dictionary default words)
-  const [allWordsDictionary] = useState<Word[]>([
-    {
-      id: "6",
-      word: "Benevolent",
-      pronunciation: "/bəˈnevələnt/",
-      definition: "Well-meaning and kindly",
-      example: "The benevolent donor gave generously to the charity.",
-      topic: "Virtue",
-      dateAdded: "2023-12-01",
-      isFavorite: false,
-      reviewCount: 0,
-    },
-    {
-      id: "7",
-      word: "Eloquent",
-      pronunciation: "/ˈeləkwənt/",
-      definition: "Fluent or persuasive in speaking or writing",
-      example: "Her eloquent speech moved the entire audience.",
-      topic: "Communication",
-      dateAdded: "2023-12-02",
-      isFavorite: false,
-      reviewCount: 0,
-    },
-    // Keep some default dictionary words for demonstration
-  ]);
+  const [allWordsDictionary] = useState<Word[]>([]);
 
   // Load user vocabularies from Supabase when component mounts
   const loadUserVocabularies = useCallback(async () => {
@@ -278,7 +254,7 @@ export default function NotebookScreen() {
     const delayedSearch = setTimeout(async () => {
       if (searchQuery.trim()) {
         let matchedWords: Word[] = [];
-        if (selectedTab === "all") {
+        if (selectedTab === "fav") {
           matchedWords = allWordsDictionary.filter(word =>
             word.word.toLowerCase().includes(searchQuery.toLowerCase())
           );
@@ -341,14 +317,12 @@ export default function NotebookScreen() {
 
   const getFilteredWords = () => {
     switch (selectedTab) {
-      case "topic":
-        return myVocabs.sort((a, b) =>
-          (a.topic || "").localeCompare(b.topic || "")
-        );
+      case "fav":
+        return myVocabs.filter(word => word.isFavorite);
       case "recent":
         return myVocabs.sort(
           (a, b) =>
-            new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime()
+            new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime()
         );
       case "myVocabs":
         return myVocabs.sort((a, b) => a.word.localeCompare(b.word));
@@ -1019,9 +993,11 @@ export default function NotebookScreen() {
     return (
       <View style={styles.flashcardContainer}>
         <View style={styles.reviewProgress}>
-          <Text style={styles.progressText}>
-            {currentReviewIndex + 1} of {reviewWords.length}
-          </Text>
+          <View style={styles.progressInfo}>
+            <Text style={styles.progressText}>
+              {currentReviewIndex + 1} of {reviewWords.length}
+            </Text>
+          </View>
           <View style={styles.progressBarContainer}>
             <View style={[styles.progressBar, { width: `${progress}%` }]} />
           </View>
@@ -1059,12 +1035,7 @@ export default function NotebookScreen() {
             >
               <View style={styles.cardContent}>
                 <Text style={styles.flashcardWord}>{currentWord.word}</Text>
-                <TouchableOpacity
-                  style={styles.soundButton}
-                  onPress={() => playPronunciation(currentWord.word)}
-                >
-                  <Volume2 size={24} color="#FF6B9D" />
-                </TouchableOpacity>
+
                 <Text style={styles.flashcardPronunciation}>
                   {currentWord.pronunciation}
                 </Text>
@@ -1124,6 +1095,21 @@ export default function NotebookScreen() {
             </LinearGradient>
           </Animated.View>
         </Animated.View>
+        <TouchableOpacity
+          style={styles.playButton}
+          onPress={e => {
+            e.stopPropagation();
+            playPronunciation(currentWord.word);
+          }}
+        >
+          <Volume2 size={20} color="#FF6B9D" />
+        </TouchableOpacity>
+        {reviewStats.total > 0 && (
+          <Text style={styles.progressStatsText}>
+            ✓ {reviewStats.correct} | ✗{" "}
+            {reviewStats.total - reviewStats.correct}
+          </Text>
+        )}
 
         {!showAnswer && !isFlipping ? (
           <TouchableOpacity
@@ -1134,23 +1120,6 @@ export default function NotebookScreen() {
             delayPressOut={0}
           />
         ) : null}
-
-        <View style={styles.mascotEncouragement}>
-          <Text style={styles.encouragementMascot}>
-            {reviewStats.total === 0
-              ? "🍡"
-              : reviewStats.correct / Math.max(reviewStats.total, 1) > 0.7
-              ? "🎉"
-              : "💪"}
-          </Text>
-          <Text style={styles.encouragementText}>
-            {reviewStats.total === 0
-              ? "You got this! Mochi believes in you!"
-              : reviewStats.correct / Math.max(reviewStats.total, 1) > 0.7
-              ? "Amazing work! Keep it up!"
-              : "Don't give up! Every mistake is learning!"}
-          </Text>
-        </View>
       </View>
     );
   };
@@ -1287,6 +1256,30 @@ export default function NotebookScreen() {
                   Recently Added
                 </Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={
+                  [
+                    styles.tab,
+                    selectedTab === "fav" ? styles.activeTab : null,
+                  ].filter(Boolean) as any
+                }
+                onPress={() => setSelectedTab("fav")}
+              >
+                <Star
+                  size={16}
+                  color={selectedTab === "fav" ? "#FFFFFF" : "#7F8C8D"}
+                />
+                <Text
+                  style={
+                    [
+                      styles.tabText,
+                      selectedTab === "fav" ? styles.activeTabText : null,
+                    ].filter(Boolean) as any
+                  }
+                >
+                  Favourite
+                </Text>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
@@ -1294,7 +1287,7 @@ export default function NotebookScreen() {
         <View style={styles.wordsSection}>
           <View style={styles.wordsSectionHeader}>
             <Text style={styles.wordsSectionTitle}>
-              {selectedTab === "all" ? "Dictionary Words" : null}
+              {selectedTab === "fav" ? "Favourite Words" : null}
               {selectedTab === "myVocabs" ? "My Vocabulary" : null}
               {selectedTab === "topic" ? "Organized by Topic" : null}
               {selectedTab === "recent" ? "Recently Added" : null}
@@ -1550,11 +1543,23 @@ export default function NotebookScreen() {
               <X size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <Text style={styles.reviewModalTitle}>Flashcard Review</Text>
-            <View style={styles.reviewStats}>
+            {/* <View style={styles.reviewStats}>
               <Text style={styles.reviewStatsText}>
-                {reviewStats.correct}/{reviewStats.total}
+                ✓ {reviewStats.correct} | ✗{" "}
+                {reviewStats.total - reviewStats.correct} | {reviewStats.total}{" "}
+                total
+                {reviewStats.total > 0 && (
+                  <Text style={styles.accuracyText}>
+                    {" "}
+                    (
+                    {Math.round(
+                      (reviewStats.correct / reviewStats.total) * 100
+                    )}
+                    %)
+                  </Text>
+                )}
               </Text>
-            </View>
+            </View> */}
           </View>
 
           {renderFlashcard()}
@@ -1565,8 +1570,8 @@ export default function NotebookScreen() {
                 style={[styles.answerButton, styles.wrongButton]}
                 onPress={() => handleReviewAnswer(false)}
               >
-                <XCircle size={24} color="#FFFFFF" />
-                <Text style={styles.answerButtonText}>Hard</Text>
+                <CircleX size={24} color="#FFFFFF" />
+                <Text style={styles.answerButtonText}>Wrong</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1574,7 +1579,7 @@ export default function NotebookScreen() {
                 onPress={() => handleReviewAnswer(true)}
               >
                 <CheckCircle size={24} color="#FFFFFF" />
-                <Text style={styles.answerButtonText}>Easy</Text>
+                <Text style={styles.answerButtonText}>True</Text>
               </TouchableOpacity>
             </View>
           ) : null}
@@ -1706,6 +1711,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 107, 157, 0.1)",
     borderRadius: 20,
     padding: 8,
+    zIndex: 20,
+    width: 40,
+    marginLeft: "auto",
+    marginRight: "auto",
   },
   searchResultDefinition: {
     fontSize: 16,
@@ -2052,7 +2061,7 @@ const styles = StyleSheet.create({
   },
   reviewModalHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    // justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -2073,11 +2082,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#FFFFFF",
     fontWeight: "600",
+    textAlign: "center",
+  },
+  accuracyText: {
+    fontSize: 12,
+    color: "#FFD700",
+    fontWeight: "bold",
   },
   flashcardContainer: {
     flex: 1,
     paddingHorizontal: 20,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   reviewProgress: {
     marginBottom: 30,
@@ -2088,6 +2103,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 10,
     opacity: 0.9,
+  },
+  progressInfo: {
+    marginBottom: 10,
+  },
+  progressStatsText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    textAlign: "center",
+    opacity: 0.8,
+    marginTop: 4,
   },
   progressBarContainer: {
     height: 6,
@@ -2236,7 +2261,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 90,
   },
   answerButton: {
     flex: 1,
