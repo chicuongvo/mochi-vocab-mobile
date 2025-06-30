@@ -1,8 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { LinearGradient } from "expo-linear-gradient"; // Thêm import này
 import { router } from "expo-router";
 import LottieView from "lottie-react-native";
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 export default function LoadingScreen() {
   const { user, loading } = useAuth();
@@ -18,31 +19,34 @@ export default function LoadingScreen() {
           // Chưa đăng nhập -> đi đến login
           router.replace("/(auth)/login");
         }
-      }, 2000); // Giảm thời gian loading để UX tốt hơn
+      }, 2000); 
 
       return () => clearTimeout(timer);
     }
   }, [user, loading]);
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={["#FF6B9D", "#FF8C42"]} 
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
       <View style={styles.content}>
         <LottieView
           source={require("../assets/animations/cat_animation.json")}
           autoPlay
           loop
-          style={{ width: 200, height: 200 }}
+          style={{ width: 350, height: 350 }}
         />
-        <Text style={styles.title}>Mochi App Loading...🍡🐱</Text>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ffc75f",
     justifyContent: "center",
     alignItems: "center",
   },
