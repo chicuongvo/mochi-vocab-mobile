@@ -29,6 +29,7 @@ import {
   View,
 } from "react-native";
 
+import { WordDetailModal } from "../../components/WordDetailModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { VocabularyService } from "../../services/vocabulary.service";
 import { UserVocabulary } from "../../types/database";
@@ -44,6 +45,7 @@ interface Word {
   isFavorite: boolean;
   reviewCount?: number;
   lastReviewed?: string;
+  audioUrl?: string; // Thêm audio URL cho pronunciation
 }
 
 interface SearchResult {
@@ -52,6 +54,12 @@ interface SearchResult {
   definition: string;
   example: string;
   partOfSpeech: string;
+  audioUrl?: string; // Thêm audio URL
+  allDefinitions?: {
+    definition: string;
+    example?: string;
+    partOfSpeech: string;
+  }[]; // Thêm tất cả definitions
 }
 
 export default function NotebookScreen() {
@@ -72,6 +80,12 @@ export default function NotebookScreen() {
   const [reviewStats, setReviewStats] = useState({ correct: 0, total: 0 });
   const [isFlipping, setIsFlipping] = useState(false);
   const [filteredVocabulary, setFilteredVocabulary] = useState<Word[]>([]);
+
+  // Word Detail Modal states
+  const [showWordDetail, setShowWordDetail] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<Word | null>(null);
+  const [selectedSearchResult, setSelectedSearchResult] =
+    useState<SearchResult | null>(null);
 
   // Loading states
   const [isLoadingVocabs, setIsLoadingVocabs] = useState(false);
@@ -140,6 +154,7 @@ export default function NotebookScreen() {
           definition: vocab.definition,
           example: vocab.example || `Example sentence with ${vocab.word}.`,
           topic: vocab.topic || "General",
+          audioUrl: vocab.audio_url,
           dateAdded:
             vocab.date_added?.split("T")[0] ||
             new Date().toISOString().split("T")[0],
@@ -167,6 +182,18 @@ export default function NotebookScreen() {
     }
   }, [user, loadUserVocabularies]);
 
+  // Function để phát pronunciation với expo-speech
+  const playPronunciation = (word: string) => {
+    if (!word) return;
+
+    Speech.stop();
+    Speech.speak(word, {
+      language: "en",
+      rate: 1,
+      pitch: 1,
+    });
+  };
+
   const searchDictionary = async (
     query: string
   ): Promise<SearchResult | null> => {
@@ -180,19 +207,58 @@ export default function NotebookScreen() {
       );
       const data = await response.json();
 
-      if (data.title === "No Definitions Found") {
+      if (data.title === "No Definitions Found" || !data[0]) {
         return null;
       }
 
       const result = data[0];
+
+      // Tìm pronunciation với audio
+      let pronunciation = "/ˈsæmpəl/";
+      let audioUrl = "";
+
+      if (result.phonetics && result.phonetics.length > 0) {
+        // Ưu tiên phonetic có audio
+        const phoneticWithAudio = result.phonetics.find(
+          (p: any) => p.audio && p.audio.trim() !== ""
+        );
+        if (phoneticWithAudio) {
+          pronunciation = phoneticWithAudio.text || pronunciation;
+          audioUrl = phoneticWithAudio.audio;
+        } else if (result.phonetics[0]?.text) {
+          pronunciation = result.phonetics[0].text;
+        }
+      }
+
+      // Lấy definition chính (định nghĩa đầu tiên)
+      const primaryMeaning = result.meanings[0];
+      const primaryDefinition = primaryMeaning?.definitions[0];
+
+      // Thu thập tất cả definitions
+      const allDefinitions: {
+        definition: string;
+        example?: string;
+        partOfSpeech: string;
+      }[] = [];
+
+      result.meanings.forEach((meaning: any) => {
+        meaning.definitions.forEach((def: any) => {
+          allDefinitions.push({
+            definition: def.definition,
+            example: def.example,
+            partOfSpeech: meaning.partOfSpeech,
+          });
+        });
+      });
+
       return {
         word: result.word,
-        pronunciation: result.phonetics[0]?.text || "/ˈsæmpəl/",
-        definition: result.meanings[0].definitions[0].definition,
-        example:
-          result.meanings[0].definitions[0].example ||
-          `Example sentence with "${query}".`,
-        partOfSpeech: result.meanings[0].partOfSpeech,
+        pronunciation,
+        audioUrl,
+        definition: primaryDefinition?.definition || "No definition available",
+        example: primaryDefinition?.example || `No example data.`,
+        partOfSpeech: primaryMeaning?.partOfSpeech || "noun",
+        allDefinitions,
       };
     } catch (error) {
       console.error("Error fetching dictionary:", error);
@@ -402,6 +468,7 @@ export default function NotebookScreen() {
         definition: searchResult.definition,
         example: searchResult.example,
         topic: "Dictionary",
+        audio_url: searchResult.audioUrl,
         is_favorite: false,
       };
 
@@ -415,6 +482,7 @@ export default function NotebookScreen() {
         definition: newVocab.definition,
         example: newVocab.example || `Example sentence with ${newVocab.word}.`,
         topic: newVocab.topic || "General",
+        audioUrl: newVocab.audio_url,
         dateAdded:
           newVocab.date_added?.split("T")[0] ||
           new Date().toISOString().split("T")[0],
@@ -612,6 +680,40 @@ export default function NotebookScreen() {
     }
   };
 
+  // Functions to handle word detail modal
+  const openWordDetail = (word: Word) => {
+    setSelectedWord(word);
+    setSelectedSearchResult(null);
+    setShowWordDetail(true);
+  };
+
+  const openSearchResultDetail = (searchResult: SearchResult) => {
+    setSelectedSearchResult(searchResult);
+    setSelectedWord(null);
+    setShowWordDetail(true);
+  };
+
+  const closeWordDetail = () => {
+    setShowWordDetail(false);
+    setSelectedWord(null);
+    setSelectedSearchResult(null);
+  };
+
+  const handleWordDetailSave = () => {
+    // Reload vocabularies after saving
+    loadUserVocabularies();
+    closeWordDetail();
+    // Clear search result after saving
+    setSearchResult(null);
+    setFilteredVocabulary([]);
+    setSearchQuery("");
+  };
+
+  const handleWordDetailUpdate = () => {
+    // Reload vocabularies after updating
+    loadUserVocabularies();
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyMascot}>🍡🐱</Text>
@@ -644,37 +746,67 @@ export default function NotebookScreen() {
       <Animated.View
         style={[styles.searchResultCard, { opacity: searchResultOpacity }]}
       >
-        <View style={styles.searchResultHeader}>
-          <View style={styles.searchResultInfo}>
-            <Text style={styles.searchResultWord}>{searchResult.word}</Text>
-            <Text style={styles.searchResultPronunciation}>
-              {searchResult.pronunciation}
-            </Text>
-            <Text style={styles.partOfSpeech}>{searchResult.partOfSpeech}</Text>
+        <TouchableOpacity
+          style={styles.searchResultContent}
+          onPress={() => openSearchResultDetail(searchResult)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.searchResultHeader}>
+            <View style={styles.searchResultInfo}>
+              <Text style={styles.searchResultWord}>{searchResult.word}</Text>
+              <Text style={styles.searchResultPronunciation}>
+                {searchResult.pronunciation}
+              </Text>
+              <Text style={styles.partOfSpeech}>
+                {searchResult.partOfSpeech}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.playButton}
+              onPress={e => {
+                e.stopPropagation();
+                playPronunciation(searchResult.word);
+              }}
+            >
+              <Volume2 size={20} color="#FF6B9D" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.playButton}
-            onPress={() => {
-              Speech.stop();
-              Speech.speak(searchResult.word, {
-                language: "en",
-                rate: 1,
-                pitch: 1,
-              });
-            }}
-          >
-            <Volume2 size={20} color="#FF6B9D" />
-          </TouchableOpacity>
-        </View>
 
-        <Text style={styles.searchResultDefinition}>
-          {searchResult.definition}
-        </Text>
+          <Text style={styles.searchResultDefinition}>
+            {searchResult.definition}
+          </Text>
 
-        <View style={styles.exampleContainer}>
-          <Text style={styles.exampleLabel}>Example:</Text>
-          <Text style={styles.searchResultExample}>{searchResult.example}</Text>
-        </View>
+          <View style={styles.exampleContainer}>
+            <Text style={styles.exampleLabel}>Example:</Text>
+            <Text style={styles.searchResultExample}>
+              {searchResult.example}
+            </Text>
+          </View>
+
+          {searchResult.allDefinitions &&
+            searchResult.allDefinitions.length > 1 && (
+              <View style={styles.additionalDefinitionsContainer}>
+                <Text style={styles.additionalDefinitionsTitle}>
+                  Other Meanings:
+                </Text>
+                {searchResult.allDefinitions.slice(1, 4).map((def, index) => (
+                  <View key={index} style={styles.additionalDefinition}>
+                    <Text style={styles.additionalPartOfSpeech}>
+                      ({def.partOfSpeech})
+                    </Text>
+                    <Text style={styles.additionalDefinitionText}>
+                      {def.definition}
+                    </Text>
+                    {def.example && (
+                      <Text style={styles.additionalExample}>
+                        &quot;{def.example}&quot;
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[
@@ -713,14 +845,22 @@ export default function NotebookScreen() {
       <View style={styles.vocabularyResultsContainer}>
         <Text style={styles.vocabularyResultsTitle}>Saved Words</Text>
         {filteredVocabulary.map(word => (
-          <View key={word.id} style={styles.vocabularyResultCard}>
+          <TouchableOpacity
+            key={word.id}
+            style={styles.vocabularyResultCard}
+            onPress={() => openWordDetail(word)}
+            activeOpacity={0.7}
+          >
             <View style={styles.wordCardHeader}>
               <View style={styles.wordCardInfo}>
                 <View style={styles.wordTitleRow}>
                   <Text style={styles.wordCardTitle}>{word.word}</Text>
                   <TouchableOpacity
                     style={styles.favoriteButton}
-                    onPress={() => toggleFavorite(word.id)}
+                    onPress={e => {
+                      e.stopPropagation();
+                      toggleFavorite(word.id);
+                    }}
                   >
                     <Star
                       size={18}
@@ -741,13 +881,9 @@ export default function NotebookScreen() {
               </View>
               <TouchableOpacity
                 style={styles.playButtonSmall}
-                onPress={() => {
-                  Speech.stop();
-                  Speech.speak(word.word, {
-                    language: "en",
-                    rate: 1,
-                    pitch: 1,
-                  });
+                onPress={e => {
+                  e.stopPropagation();
+                  playPronunciation(word.word);
                 }}
               >
                 <Volume2 size={16} color="#7F8C8D" />
@@ -777,27 +913,38 @@ export default function NotebookScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => deleteWord(word.id)}
+                  onPress={e => {
+                    e.stopPropagation();
+                    deleteWord(word.id);
+                  }}
                 >
                   <Trash2 size={16} color="#E74C3C" />
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
     );
   };
 
   const renderWordCard = (word: Word) => (
-    <View key={word.id} style={styles.wordCard}>
+    <TouchableOpacity
+      key={word.id}
+      style={styles.wordCard}
+      onPress={() => openWordDetail(word)}
+      activeOpacity={0.7}
+    >
       <View style={styles.wordCardHeader}>
         <View style={styles.wordCardInfo}>
           <View style={styles.wordTitleRow}>
             <Text style={styles.wordCardTitle}>{word.word}</Text>
             <TouchableOpacity
               style={styles.favoriteButton}
-              onPress={() => toggleFavorite(word.id)}
+              onPress={e => {
+                e.stopPropagation();
+                toggleFavorite(word.id);
+              }}
             >
               <Star
                 size={18}
@@ -816,13 +963,9 @@ export default function NotebookScreen() {
         </View>
         <TouchableOpacity
           style={styles.playButtonSmall}
-          onPress={() => {
-            Speech.stop();
-            Speech.speak(word.word, {
-              language: "en",
-              rate: 1,
-              pitch: 1,
-            });
+          onPress={e => {
+            e.stopPropagation();
+            playPronunciation(word.word);
           }}
         >
           <Volume2 size={16} color="#7F8C8D" />
@@ -845,7 +988,8 @@ export default function NotebookScreen() {
         <View style={styles.wordActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => {
+            onPress={e => {
+              e.stopPropagation();
               setEditingWord(word);
               setShowEditModal(true);
             }}
@@ -854,13 +998,16 @@ export default function NotebookScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => deleteWord(word.id)}
+            onPress={e => {
+              e.stopPropagation();
+              deleteWord(word.id);
+            }}
           >
             <Trash2 size={16} color="#E74C3C" />
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFlashcard = () => {
@@ -914,14 +1061,7 @@ export default function NotebookScreen() {
                 <Text style={styles.flashcardWord}>{currentWord.word}</Text>
                 <TouchableOpacity
                   style={styles.soundButton}
-                  onPress={() => {
-                    Speech.stop();
-                    Speech.speak(currentWord.word, {
-                      language: "en",
-                      rate: 1,
-                      pitch: 1,
-                    });
-                  }}
+                  onPress={() => playPronunciation(currentWord.word)}
                 >
                   <Volume2 size={24} color="#FF6B9D" />
                 </TouchableOpacity>
@@ -1102,31 +1242,6 @@ export default function NotebookScreen() {
                 style={
                   [
                     styles.tab,
-                    selectedTab === "all" ? styles.activeTab : null,
-                  ].filter(Boolean) as any
-                }
-                onPress={() => setSelectedTab("all")}
-              >
-                <BookOpen
-                  size={16}
-                  color={selectedTab === "all" ? "#FFFFFF" : "#7F8C8D"}
-                />
-                <Text
-                  style={
-                    [
-                      styles.tabText,
-                      selectedTab === "all" ? styles.activeTabText : null,
-                    ].filter(Boolean) as any
-                  }
-                >
-                  All Words
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={
-                  [
-                    styles.tab,
                     selectedTab === "myVocabs" ? styles.activeTab : null,
                   ].filter(Boolean) as any
                 }
@@ -1145,31 +1260,6 @@ export default function NotebookScreen() {
                   }
                 >
                   My Vocabs
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={
-                  [
-                    styles.tab,
-                    selectedTab === "topic" ? styles.activeTab : null,
-                  ].filter(Boolean) as any
-                }
-                onPress={() => setSelectedTab("topic")}
-              >
-                <Hash
-                  size={16}
-                  color={selectedTab === "topic" ? "#FFFFFF" : "#7F8C8D"}
-                />
-                <Text
-                  style={
-                    [
-                      styles.tabText,
-                      selectedTab === "topic" ? styles.activeTabText : null,
-                    ].filter(Boolean) as any
-                  }
-                >
-                  By Topic
                 </Text>
               </TouchableOpacity>
 
@@ -1490,6 +1580,16 @@ export default function NotebookScreen() {
           ) : null}
         </View>
       </Modal>
+
+      <WordDetailModal
+        visible={showWordDetail}
+        onClose={closeWordDetail}
+        word={selectedWord || undefined}
+        searchResult={selectedSearchResult || undefined}
+        onSave={handleWordDetailSave}
+        onToggleFavorite={toggleFavorite}
+        onUpdate={handleWordDetailUpdate}
+      />
     </View>
   );
 }
@@ -2187,7 +2287,47 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
   },
+  additionalDefinitionsContainer: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+  },
+  additionalDefinitionsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2C3E50",
+    marginBottom: 8,
+  },
+  additionalDefinition: {
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECF0F1",
+  },
+  additionalPartOfSpeech: {
+    fontSize: 12,
+    color: "#9B59B6",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  additionalDefinitionText: {
+    fontSize: 13,
+    color: "#2C3E50",
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  additionalExample: {
+    fontSize: 12,
+    color: "#7F8C8D",
+    fontStyle: "italic",
+    lineHeight: 16,
+  },
   bottomPadding: {
     height: 100,
+  },
+
+  searchResultContent: {
+    flex: 1,
   },
 });
