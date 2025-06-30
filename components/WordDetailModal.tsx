@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import * as Speech from "expo-speech";
-import { ArrowLeft, Hash, Save, Star, Volume2 } from "lucide-react-native";
+import { ArrowLeft, Hash, Save, Volume2 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -215,7 +215,7 @@ export const WordDetailModal: React.FC<WordDetailModalProps> = ({
                   <Volume2 size={24} color="#FF6B9D" />
                 </TouchableOpacity>
 
-                {canToggleFavorite && (
+                {/* {canToggleFavorite && (
                   <TouchableOpacity
                     style={styles.favoriteButton}
                     onPress={handleToggleFavorite}
@@ -227,7 +227,7 @@ export const WordDetailModal: React.FC<WordDetailModalProps> = ({
                       fill={displayIsFavorite ? "#FFD700" : "none"}
                     />
                   </TouchableOpacity>
-                )}
+                )} */}
               </View>
             </View>
 
