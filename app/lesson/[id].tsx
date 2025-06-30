@@ -2,6 +2,8 @@ import { ActionButtons } from "@/components/ActionButtons";
 import GlobalLoading from "@/components/GlobalLoading";
 import { LessonHeader } from "@/components/LessonHeader";
 import { LessonStats } from "@/components/LessonStats";
+import { playSound } from "@/utils/playSound";
+
 import {
   FillBlankExercise,
   FlashcardExercise,
@@ -85,13 +87,14 @@ export default function LessonScreen() {
   ]);
 
   const handleAnswer = (isCorrect: boolean) => {
+    playSound(isCorrect ? "correct" : "wrong");
+
     if (isCorrect) {
       setCorrectAnswers(prev => prev + 1);
     } else {
       setWrongAnswers(prev => prev + 1);
     }
 
-    // Show answer
     setShowAnswer(true);
   };
 
