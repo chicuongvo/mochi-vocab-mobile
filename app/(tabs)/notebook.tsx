@@ -31,6 +31,7 @@ import {
 
 import { WordDetailModal } from "../../components/WordDetailModal";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUserStats } from "../../hooks/useUserStats";
 import { VocabularyService } from "../../services/vocabulary.service";
 import { UserVocabulary } from "../../types/database";
 
@@ -64,6 +65,8 @@ interface SearchResult {
 
 export default function NotebookScreen() {
   const { user } = useAuth();
+  const { trackWordLearned, trackWordReviewed, trackExerciseCompletion } =
+    useUserStats();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState<
     "fav" | "myVocabs" | "topic" | "recent"
@@ -374,6 +377,20 @@ export default function NotebookScreen() {
             : word
         )
       );
+
+      // Track word reviewed với thông tin đúng/sai
+      try {
+        await trackWordReviewed();
+        if (isCorrect) {
+          // Track exercise completion với accuracy 100% nếu đúng
+          await trackExerciseCompletion(true, 0.5); // 0.5 phút cho mỗi review
+        } else {
+          // Track exercise completion với accuracy 0% nếu sai
+          await trackExerciseCompletion(false, 0.5);
+        }
+      } catch (trackError) {
+        console.error("Error tracking word reviewed:", trackError);
+      }
     } catch (error) {
       console.error("Error updating review stats:", error);
       // Continue with local update even if Supabase fails
@@ -470,6 +487,13 @@ export default function NotebookScreen() {
       setSearchResult(null);
       setFilteredVocabulary([]);
 
+      // Track word learned
+      try {
+        await trackWordLearned();
+      } catch (trackError) {
+        console.error("Error tracking word learned:", trackError);
+      }
+
       Alert.alert(
         "Success! 🎉",
         `"${searchResult.word}" has been added to your vocabulary!`
@@ -534,6 +558,13 @@ export default function NotebookScreen() {
         topic: "",
       });
       setShowAddModal(false);
+
+      // Track word learned
+      try {
+        await trackWordLearned();
+      } catch (trackError) {
+        console.error("Error tracking word learned:", trackError);
+      }
 
       Alert.alert(
         "Awesome! 🌟",

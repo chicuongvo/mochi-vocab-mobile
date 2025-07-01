@@ -10,10 +10,11 @@ import {
   ListeningExercise,
   MultipleChoiceExercise,
   SpellingExercise,
-  WordOrderExercise,
   WordDefinitionMatchingExercise,
+  WordOrderExercise,
 } from "@/components/exercises";
 import { useCourse } from "@/contexts/CourseContext";
+import { useUserStats } from "@/hooks/useUserStats";
 import { Exercise } from "@/types/lesson";
 import { generateExercises } from "@/utils/generateExercises";
 import { router, useLocalSearchParams } from "expo-router";
@@ -31,6 +32,7 @@ import {
 export default function LessonScreen() {
   const { id } = useLocalSearchParams();
   const { setCourseById, currentCourse, currentWords, loading } = useCourse();
+  const { trackExerciseCompletion, trackLessonCompletion } = useUserStats();
 
   // Exercise states
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
@@ -41,7 +43,10 @@ export default function LessonScreen() {
   const [wordOrder, setWordOrder] = useState<string[]>([]);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState(0);
-  const [matchingAnswers, setMatchingAnswers] = useState<{ [wordIndex: number]: number }>({});
+  const [lessonStartTime] = useState(Date.now());
+  const [matchingAnswers, setMatchingAnswers] = useState<{
+    [wordIndex: number]: number;
+  }>({});
 
   // Animations
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -89,7 +94,7 @@ export default function LessonScreen() {
     currentExercise?.shuffledWords,
   ]);
 
-  const handleAnswer = (isCorrect: boolean) => {
+  const handleAnswer = async (isCorrect: boolean) => {
     playSound(isCorrect ? "correct" : "wrong");
 
     if (isCorrect) {
@@ -98,10 +103,17 @@ export default function LessonScreen() {
       setWrongAnswers(prev => prev + 1);
     }
 
+    // Track exercise completion
+    try {
+      await trackExerciseCompletion(isCorrect, 1); // Giả sử mỗi exercise mất 1 phút
+    } catch (error) {
+      console.error("Error tracking exercise:", error);
+    }
+
     setShowAnswer(true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentExerciseIndex < totalExercises - 1) {
       setCurrentExerciseIndex(prev => prev + 1);
     } else {
@@ -109,6 +121,22 @@ export default function LessonScreen() {
       const accuracy = Math.round(
         (correctAnswers / (correctAnswers + wrongAnswers)) * 100
       );
+
+      // Tính thời gian hoàn thành lesson (phút)
+      const timeSpentMinutes = Math.round(
+        (Date.now() - lessonStartTime) / 60000
+      );
+
+      // Tính số từ thực tế trong lesson
+      const wordsInLesson = currentWords?.length || 5;
+
+      // Track lesson completion với số từ thực tế
+      try {
+        await trackLessonCompletion(accuracy, timeSpentMinutes, wordsInLesson);
+      } catch (error) {
+        console.error("Error tracking lesson completion:", error);
+      }
+
       Alert.alert(
         "Lesson Complete! 🎉",
         `Congratulations! You completed the lesson with ${accuracy}% accuracy.`,
@@ -143,7 +171,8 @@ export default function LessonScreen() {
       case "word-definition-matching":
         // Check if all matches are correct
         const matchingPairs = currentExercise.matchingPairs || [];
-        isCorrect = Object.keys(matchingAnswers).length === matchingPairs.length &&
+        isCorrect =
+          Object.keys(matchingAnswers).length === matchingPairs.length &&
           Object.keys(matchingAnswers).every(wordIndexStr => {
             const wordIndex = parseInt(wordIndexStr);
             const definitionIndex = matchingAnswers[wordIndex];

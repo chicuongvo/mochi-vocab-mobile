@@ -1,7 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserStats } from "@/hooks/useUserStats";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { BookOpen, LogOut, Star, Trophy } from "lucide-react-native";
+import { BookOpen, LogOut, Trophy } from "lucide-react-native";
 import {
   Alert,
   ScrollView,
@@ -13,6 +14,7 @@ import {
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { stats, weeklyProgress, monthlyProgress } = useUserStats();
 
   const handleLogout = async () => {
     Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
@@ -39,17 +41,19 @@ export default function ProfileScreen() {
       },
     ]);
   };
+
+  // Sử dụng dữ liệu từ stats hoặc fallback values
   const userStats = {
-    name: "Sarah Johnson",
-    level: "Advanced Learner",
-    currentStreak: 7,
-    longestStreak: 23,
-    totalWords: 1247,
-    wordsThisWeek: 45,
-    studyTime: 142, // minutes
-    accuracy: 87,
+    name: user?.fullName || "Anonymous User",
+    level: "Beginner",
+    currentStreak: stats.currentStreak,
+    longestStreak: stats.longestStreak,
+    totalWords: stats.totalWords,
+    wordsThisWeek: stats.wordsThisWeek,
+    studyTime: stats.studyTime, // minutes
+    accuracy: stats.accuracy,
     achievements: 12,
-    joinDate: "January 2024",
+    joinDate: "July 2025",
   };
 
   const recentAchievements = [
@@ -76,17 +80,21 @@ export default function ProfileScreen() {
     },
   ];
 
-  const weeklyProgress = [
-    { day: "Mon", words: 8, minutes: 25 },
-    { day: "Tue", words: 12, minutes: 30 },
-    { day: "Wed", words: 6, minutes: 15 },
-    { day: "Thu", words: 10, minutes: 28 },
-    { day: "Fri", words: 15, minutes: 35 },
-    { day: "Sat", words: 9, minutes: 22 },
-    { day: "Sun", words: 11, minutes: 27 },
-  ];
+  // Sử dụng dữ liệu thật từ hook hoặc fallback data
+  const displayWeeklyProgress =
+    weeklyProgress.length > 0
+      ? weeklyProgress
+      : [
+          { day: "Mon", words: 0, minutes: 0, date: "" },
+          { day: "Tue", words: 0, minutes: 0, date: "" },
+          { day: "Wed", words: 0, minutes: 0, date: "" },
+          { day: "Thu", words: 0, minutes: 0, date: "" },
+          { day: "Fri", words: 0, minutes: 0, date: "" },
+          { day: "Sat", words: 0, minutes: 0, date: "" },
+          { day: "Sun", words: 0, minutes: 0, date: "" },
+        ];
 
-  const maxWords = Math.max(...weeklyProgress.map(d => d.words));
+  const maxWords = Math.max(...displayWeeklyProgress.map(d => d.words), 1); // Minimum 1 để tránh division by zero
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -174,7 +182,7 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <View style={styles.chart}>
-            {weeklyProgress.map((day, index) => (
+            {displayWeeklyProgress.map((day, index) => (
               <View key={index} style={styles.chartBar}>
                 <View
                   style={[
@@ -195,7 +203,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Recent Achievements */}
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Star size={20} color="#F39C12" />
           <Text style={styles.sectionTitle}>Recent Achievements</Text>
@@ -215,7 +223,7 @@ export default function ProfileScreen() {
             <Text style={styles.achievementDate}>{achievement.date}</Text>
           </View>
         ))}
-      </View>
+      </View> */}
 
       {/* Learning Insights */}
       {/* <View style={styles.section}>
@@ -252,34 +260,52 @@ export default function ProfileScreen() {
         <View style={styles.goalCard}>
           <View style={styles.goalHeader}>
             <Text style={styles.goalTitle}>Monthly Goal</Text>
-            <Text style={styles.goalProgress}>67%</Text>
+            <Text style={styles.goalProgress}>
+              {monthlyProgress.currentMonth.percentage}%
+            </Text>
           </View>
           <Text style={styles.goalDescription}>
-            Learn 200 new words this month
-          </Text>
-          <View style={styles.goalBarContainer}>
-            <View style={[styles.goalBar, { width: "67%" }]} />
-          </View>
-          <Text style={styles.goalStats}>134 / 200 words completed</Text>
-        </View>
-
-        <View style={styles.goalCard}>
-          <View style={styles.goalHeader}>
-            <Text style={styles.goalTitle}>Streak Challenge</Text>
-            <Text style={styles.goalProgress}>30%</Text>
-          </View>
-          <Text style={styles.goalDescription}>
-            Maintain 30-day study streak
+            Learn {monthlyProgress.currentMonth.goal} new words this month
           </Text>
           <View style={styles.goalBarContainer}>
             <View
               style={[
                 styles.goalBar,
-                { width: "30%", backgroundColor: "#F39C12" },
+                { width: `${monthlyProgress.currentMonth.percentage}%` },
               ]}
             />
           </View>
-          <Text style={styles.goalStats}>9 / 30 days completed</Text>
+          <Text style={styles.goalStats}>
+            {monthlyProgress.currentMonth.wordsLearned} /{" "}
+            {monthlyProgress.currentMonth.goal} words completed
+          </Text>
+        </View>
+
+        <View style={styles.goalCard}>
+          <View style={styles.goalHeader}>
+            <Text style={styles.goalTitle}>Streak Challenge</Text>
+            <Text style={styles.goalProgress}>
+              {monthlyProgress.streakGoal.percentage}%
+            </Text>
+          </View>
+          <Text style={styles.goalDescription}>
+            Maintain {monthlyProgress.streakGoal.goal}-day study streak
+          </Text>
+          <View style={styles.goalBarContainer}>
+            <View
+              style={[
+                styles.goalBar,
+                {
+                  width: `${monthlyProgress.streakGoal.percentage}%`,
+                  backgroundColor: "#F39C12",
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.goalStats}>
+            {monthlyProgress.streakGoal.currentStreak} /{" "}
+            {monthlyProgress.streakGoal.goal} days completed
+          </Text>
         </View>
       </View>
 
