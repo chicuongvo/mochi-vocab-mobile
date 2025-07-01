@@ -46,6 +46,20 @@ export interface UserVocabulary {
   updated_at: string;
 }
 
+export interface UserActivity {
+  id: string;
+  user_id: string;
+  activity_date: string;
+  words_learned: number;
+  words_reviewed: number;
+  exercises_completed: number;
+  study_time_minutes: number;
+  accuracy_rate: number;
+  lesson_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Helper type for creating/updating vocabulary
 export interface CreateUserVocabulary {
   word: string;
