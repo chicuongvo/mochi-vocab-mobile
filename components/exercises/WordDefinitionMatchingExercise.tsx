@@ -238,7 +238,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
           <View style={styles.definitionsColumn}>
             <Text style={styles.columnTitle}>Definitions</Text>
             {shuffledDefinitions.map((item, index) => {
-              const matchColor = getMatchColor(undefined, index);
+              const matchColor = getMatchColor(index);
               const selected = isSelected(undefined, index);
               
               return (
