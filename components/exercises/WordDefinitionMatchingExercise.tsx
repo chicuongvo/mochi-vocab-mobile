@@ -35,7 +35,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
   showAnswer,
   onAnswerChange,
 }) => {
-  // State for tracking matches
+  // State for tracking matches: { wordOriginalIndex: shuffledDefinitionIndex }
   const [matches, setMatches] = useState<{ [wordIndex: number]: number }>({});
   const [selectedWord, setSelectedWord] = useState<number | null>(null);
   const [selectedDefinition, setSelectedDefinition] = useState<number | null>(null);
@@ -53,10 +53,11 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
   }
 
   // Shuffle definitions for the right column
+  // Store the definition text and its original index
   const [shuffledDefinitions] = useState(() => {
     const definitions = matchingPairs.map((pair, index) => ({
       definition: pair.definition,
-      originalIndex: index,
+      originalIndex: index, // This is the original index of the definition in matchingPairs
     }));
     return definitions.sort(() => Math.random() - 0.5);
   });
@@ -64,64 +65,62 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
   const handleWordPress = (wordIndex: number) => {
     if (showAnswer) return;
 
+    // If the word is already selected, unselect it and remove its match
     if (selectedWord === wordIndex) {
       const newMatches = { ...matches };
-      if (newMatches[wordIndex] !== undefined) {
-        delete newMatches[wordIndex];
-        setMatches(newMatches);
-        onAnswerChange?.(newMatches); 
-      }
-
-      setSelectedWord(null); // Bỏ chọn
-    } 
-      else {
+      delete newMatches[wordIndex];
+      setMatches(newMatches);
+      onAnswerChange?.(newMatches);
+      setSelectedWord(null);
+    } else {
       setSelectedWord(wordIndex);
-
+      // If a definition is already selected, create a match immediately
       if (selectedDefinition !== null) {
         createMatch(wordIndex, selectedDefinition);
       }
     }
   };
 
-  const handleDefinitionPress = (definitionIndex: number) => {
+  const handleDefinitionPress = (shuffledDefinitionIndex: number) => {
     if (showAnswer) return;
 
-    if (selectedDefinition === definitionIndex) {
-      // Tìm wordIndex đã match với definition này
-      const wordToDelete = Object.keys(matches).find(
-        key => matches[parseInt(key)] === definitionIndex
+    // If the definition is already selected, unselect it and remove its match
+    if (selectedDefinition === shuffledDefinitionIndex) {
+      const newMatches = { ...matches };
+      // Find the word that was matched with this shuffledDefinitionIndex
+      const wordToUnmatch = Object.keys(newMatches).find(
+        (key) => newMatches[parseInt(key)] === shuffledDefinitionIndex
       );
-
-      if (wordToDelete !== undefined) {
-        const newMatches = { ...matches };
-        delete newMatches[parseInt(wordToDelete)];
+      if (wordToUnmatch !== undefined) {
+        delete newMatches[parseInt(wordToUnmatch)];
         setMatches(newMatches);
-        onAnswerChange?.(newMatches); 
+        onAnswerChange?.(newMatches);
       }
-
-      setSelectedDefinition(null); // Bỏ chọn
+      setSelectedDefinition(null);
     } else {
-      setSelectedDefinition(definitionIndex);
-
-      // If a word is already selected, create a match
+      setSelectedDefinition(shuffledDefinitionIndex);
+      // If a word is already selected, create a match immediately
       if (selectedWord !== null) {
-        createMatch(selectedWord, definitionIndex);
+        createMatch(selectedWord, shuffledDefinitionIndex);
       }
     }
   };
 
-  const createMatch = (wordIndex: number, definitionIndex: number) => {
+  const createMatch = (wordIndex: number, shuffledDefinitionIndex: number) => {
     const newMatches = { ...matches };
 
-    // Remove any existing matches for this word or definition
-    Object.keys(newMatches).forEach(key => {
-      if (newMatches[parseInt(key)] === definitionIndex) {
+    // Remove any existing match for the selected word
+    delete newMatches[wordIndex];
+
+    // Remove any existing match for the selected definition (from another word)
+    Object.keys(newMatches).forEach((key) => {
+      if (newMatches[parseInt(key)] === shuffledDefinitionIndex) {
         delete newMatches[parseInt(key)];
       }
     });
 
-    // Create new match
-    newMatches[wordIndex] = definitionIndex;
+    // Create the new match: { originalWordIndex: shuffledDefinitionIndex }
+    newMatches[wordIndex] = shuffledDefinitionIndex;
 
     setMatches(newMatches);
     setSelectedWord(null);
@@ -130,20 +129,20 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
     onAnswerChange?.(newMatches);
   };
 
-  const getMatchColor = (wordIndex: number, definitionIndex?: number): any => {
-    if (definitionIndex !== undefined) {
-      // For definitions, check if any word is matched to this definition
-      const matchedWordIndex = Object.keys(matches).find(
-        key => matches[parseInt(key)] === definitionIndex
-      );
-      if (matchedWordIndex) {
-        const colorIndex = parseInt(matchedWordIndex) % MATCH_COLORS.length;
+  const getMatchColor = (itemIndex: number, isWord: boolean): any => {
+    if (isWord) {
+      // Check if this word has a match
+      if (matches[itemIndex] !== undefined) {
+        const colorIndex = itemIndex % MATCH_COLORS.length;
         return MATCH_COLORS[colorIndex];
       }
     } else {
-      // For words, check if this word has a match
-      if (matches[wordIndex] !== undefined) {
-        const colorIndex = wordIndex % MATCH_COLORS.length;
+      // Check if this definition (at shuffled index) has a word matched to it
+      const matchedWordIndex = Object.keys(matches).find(
+        (wordIdx) => matches[parseInt(wordIdx)] === itemIndex
+      );
+      if (matchedWordIndex !== undefined) {
+        const colorIndex = parseInt(matchedWordIndex) % MATCH_COLORS.length;
         return MATCH_COLORS[colorIndex];
       }
     }
@@ -161,11 +160,16 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
   };
 
   const checkAnswers = (): boolean => {
-    return Object.keys(matches).every(wordIndexStr => {
+    if (Object.keys(matches).length !== matchingPairs.length) {
+      return false; // Not all pairs are matched
+    }
+    return Object.keys(matches).every((wordIndexStr) => {
       const wordIndex = parseInt(wordIndexStr);
-      const definitionIndex = matches[wordIndex];
-      const originalDefinitionIndex = shuffledDefinitions[definitionIndex]?.originalIndex;
-      return originalDefinitionIndex === wordIndex;
+      const shuffledDefIndex = matches[wordIndex];
+      // Get the original index of the definition from the shuffled array
+      const originalDefIndex = shuffledDefinitions[shuffledDefIndex].originalIndex;
+      // Check if the original index of the word matches the original index of the definition
+      return originalDefIndex === wordIndex;
     });
   };
 
@@ -196,7 +200,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
           <View style={styles.wordsColumn}>
             <Text style={styles.columnTitle}>Words</Text>
             {matchingPairs.map((pair, index) => {
-              const matchColor = getMatchColor(index);
+              const matchColor = getMatchColor(index, true); // Pass true for isWord
               const selected = isSelected(index);
 
               return (
@@ -214,10 +218,12 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
                   disabled={showAnswer}
                 >
                   <View style={styles.wordContent}>
-                  <Text style={[
-                      styles.wordText,
-                      matchColor && { color: matchColor.border }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.wordText,
+                        matchColor && { color: matchColor.border },
+                      ]}
+                    >
                       {pair.word}
                     </Text>
                     {pair.pronunciation && (
@@ -241,7 +247,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
           <View style={styles.definitionsColumn}>
             <Text style={styles.columnTitle}>Definitions</Text>
             {shuffledDefinitions.map((item, index) => {
-              const matchColor = getMatchColor(index);
+              const matchColor = getMatchColor(index, false); // Pass false for isWord
               const selected = isSelected(undefined, index);
 
               return (
@@ -258,10 +264,12 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
                   onPress={() => handleDefinitionPress(index)}
                   disabled={showAnswer}
                 >
-                  <Text style={[
-                    styles.definitionText,
-                    matchColor && { color: matchColor.border }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.definitionText,
+                      matchColor && { color: matchColor.border },
+                    ]}
+                  >
                     {item.definition}
                   </Text>
                 </TouchableOpacity>
@@ -445,7 +453,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 6,
   },
   correctWord: {
     fontSize: 13,
