@@ -8,11 +8,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
+import { useUserStats } from "../../hooks/useUserStats";
 
 export default function HomeScreen() {
-  const currentStreak = 7;
-  const wordsToReview = 12;
-  const todayProgress = 85;
+  const { user } = useAuth();
+  const { stats, loading } = useUserStats();
 
   const navigateToReview = () => {
     router.push("/(tabs)/review");
@@ -21,6 +22,18 @@ export default function HomeScreen() {
   const navigateToCourses = () => {
     router.push("/(tabs)/courses");
   };
+
+  // Sử dụng dữ liệu từ stats hoặc fallback values nếu đang loading hoặc user chưa đăng nhập
+  const currentStreak = stats.currentStreak;
+  const wordsToReview = stats.wordsToReview;
+  const todayProgress = stats.todayProgress;
+  const totalWords = stats.totalWords;
+
+  // Hiển thị loading hoặc dữ liệu mặc định khi chưa có user
+  const displayStreak = user ? currentStreak : 0;
+  const displayReview = user ? wordsToReview : 0;
+  const displayProgress = user ? todayProgress : 0;
+  const displayTotal = user ? totalWords : 0;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -63,7 +76,7 @@ export default function HomeScreen() {
               <View style={styles.goldenTimeInfo}>
                 <Text style={styles.goldenTimeTitle}>Perfect Review Time!</Text>
                 <Text style={styles.goldenTimeSubtitle}>
-                  {wordsToReview} words ready for review
+                  {displayReview} words ready for review
                 </Text>
                 <Text style={styles.goldenTimeTime}>
                   Best time: Now - 2:00 PM
@@ -85,7 +98,7 @@ export default function HomeScreen() {
             <View style={styles.statIconContainer}>
               <Star size={20} color="#FF6B9D" />
             </View>
-            <Text style={styles.statNumber}>{currentStreak}</Text>
+            <Text style={styles.statNumber}>{displayStreak}</Text>
             <Text style={styles.statLabel}>Day Streak</Text>
           </View>
 
@@ -93,7 +106,7 @@ export default function HomeScreen() {
             <View style={styles.statIconContainer}>
               <Target size={20} color="#9B59B6" />
             </View>
-            <Text style={styles.statNumber}>{todayProgress}%</Text>
+            <Text style={styles.statNumber}>{displayProgress}%</Text>
             <Text style={styles.statLabel}>Daily Goal</Text>
           </View>
 
@@ -101,7 +114,7 @@ export default function HomeScreen() {
             <View style={styles.statIconContainer}>
               <TrendingUp size={20} color="#2ECC71" />
             </View>
-            <Text style={styles.statNumber}>247</Text>
+            <Text style={styles.statNumber}>{displayTotal}</Text>
             <Text style={styles.statLabel}>Words Learned</Text>
           </View>
         </View>
