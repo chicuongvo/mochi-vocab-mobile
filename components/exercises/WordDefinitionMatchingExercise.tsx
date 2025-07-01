@@ -40,32 +40,18 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
   const [selectedWord, setSelectedWord] = useState<number | null>(null);
   const [selectedDefinition, setSelectedDefinition] = useState<number | null>(null);
 
-  // Generate matching pairs from the exercise data
-  const generateMatchingPairs = (): MatchingPair[] => {
-    // For this exercise, we'll use the current word and create additional pairs
-    // In a real implementation, you'd want to pass multiple words to the exercise
-    const pairs: MatchingPair[] = [
-      {
-        word: exercise.word.word,
-        definition: exercise.word.definition,
-        pronunciation: exercise.word.pronunciation,
-      },
-    ];
+  // Use matchingPairs from exercise data
+  const matchingPairs = exercise.matchingPairs || [];
 
-    // Add some mock pairs for demonstration (in real app, these would come from exercise data)
-    if (exercise.options && exercise.options.length >= 3) {
-      pairs.push(
-        { word: "Example", definition: exercise.options[0] },
-        { word: "Sample", definition: exercise.options[1] },
-        { word: "Instance", definition: exercise.options[2] }
-      );
-    }
+  // Kiểm tra nếu không có đủ dữ liệu
+  if (!matchingPairs || matchingPairs.length < 4) {
+    return (
+      <View style={styles.exerciseContainer}>
+        <Text style={styles.errorText}>Không đủ dữ liệu để hiển thị bài tập.</Text>
+      </View>
+    );
+  }
 
-    return pairs;
-  };
-
-  const matchingPairs = generateMatchingPairs();
-  
   // Shuffle definitions for the right column
   const [shuffledDefinitions] = useState(() => {
     const definitions = matchingPairs.map((pair, index) => ({
@@ -79,12 +65,18 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
     if (showAnswer) return;
 
     if (selectedWord === wordIndex) {
-      // Deselect if clicking the same word
-      setSelectedWord(null);
-    } else {
+      const newMatches = { ...matches };
+      if (newMatches[wordIndex] !== undefined) {
+        delete newMatches[wordIndex];
+        setMatches(newMatches);
+        onAnswerChange?.(newMatches); 
+      }
+
+      setSelectedWord(null); // Bỏ chọn
+    } 
+      else {
       setSelectedWord(wordIndex);
-      
-      // If a definition is already selected, create a match
+
       if (selectedDefinition !== null) {
         createMatch(wordIndex, selectedDefinition);
       }
@@ -95,11 +87,22 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
     if (showAnswer) return;
 
     if (selectedDefinition === definitionIndex) {
-      // Deselect if clicking the same definition
-      setSelectedDefinition(null);
+      // Tìm wordIndex đã match với definition này
+      const wordToDelete = Object.keys(matches).find(
+        key => matches[parseInt(key)] === definitionIndex
+      );
+
+      if (wordToDelete !== undefined) {
+        const newMatches = { ...matches };
+        delete newMatches[parseInt(wordToDelete)];
+        setMatches(newMatches);
+        onAnswerChange?.(newMatches); 
+      }
+
+      setSelectedDefinition(null); // Bỏ chọn
     } else {
       setSelectedDefinition(definitionIndex);
-      
+
       // If a word is already selected, create a match
       if (selectedWord !== null) {
         createMatch(selectedWord, definitionIndex);
@@ -109,21 +112,21 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
 
   const createMatch = (wordIndex: number, definitionIndex: number) => {
     const newMatches = { ...matches };
-    
+
     // Remove any existing matches for this word or definition
     Object.keys(newMatches).forEach(key => {
       if (newMatches[parseInt(key)] === definitionIndex) {
         delete newMatches[parseInt(key)];
       }
     });
-    
+
     // Create new match
     newMatches[wordIndex] = definitionIndex;
-    
+
     setMatches(newMatches);
     setSelectedWord(null);
     setSelectedDefinition(null);
-    
+
     onAnswerChange?.(newMatches);
   };
 
@@ -184,7 +187,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
         </View>
 
         <Text style={styles.instructionText}>
-          Tap a word on the left, then tap its matching definition on the right. 
+          Tap a word on the left, then tap its matching definition on the right.
           Matched pairs will have the same colored border.
         </Text>
 
@@ -195,7 +198,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
             {matchingPairs.map((pair, index) => {
               const matchColor = getMatchColor(index);
               const selected = isSelected(index);
-              
+
               return (
                 <TouchableOpacity
                   key={`word-${index}`}
@@ -211,7 +214,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
                   disabled={showAnswer}
                 >
                   <View style={styles.wordContent}>
-                    <Text style={[
+                  <Text style={[
                       styles.wordText,
                       matchColor && { color: matchColor.border }
                     ]}>
@@ -240,7 +243,7 @@ export const WordDefinitionMatchingExercise: React.FC<WordDefinitionMatchingProp
             {shuffledDefinitions.map((item, index) => {
               const matchColor = getMatchColor(index);
               const selected = isSelected(undefined, index);
-              
+
               return (
                 <TouchableOpacity
                   key={`definition-${index}`}
@@ -370,7 +373,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 2,
     borderColor: "#E8E6E8",
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "space-between",
     minHeight: 70,
@@ -398,7 +401,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   wordText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "bold",
     color: "#2C3E50",
     marginBottom: 2,
@@ -409,14 +412,15 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   definitionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#2C3E50",
     lineHeight: 18,
   },
   audioButton: {
-    padding: 8,
+    padding: 5,
     borderRadius: 8,
     backgroundColor: "rgba(127, 140, 141, 0.1)",
+    marginTop: 5,
   },
   answerReveal: {
     marginTop: 20,
@@ -444,10 +448,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   correctWord: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "bold",
     color: "#2ECC71",
-    flex: 1,
+    flex: 1.2,
     textAlign: "right",
   },
   matchArrow: {
@@ -456,9 +460,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   correctDefinition: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#2ECC71",
-    flex: 2,
+    flex: 1.8,
   },
   progressContainer: {
     alignItems: "center",
@@ -488,5 +492,11 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     textAlign: "center",
     lineHeight: 18,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#E74C3C",
+    textAlign: "center",
+    margin: 20,
   },
 });
