@@ -11,6 +11,7 @@ import {
   MultipleChoiceExercise,
   SpellingExercise,
   WordOrderExercise,
+  WordDefinitionMatchingExercise,
 } from "@/components/exercises";
 import { useCourse } from "@/contexts/CourseContext";
 import { Exercise } from "@/types/lesson";
@@ -40,6 +41,7 @@ export default function LessonScreen() {
   const [wordOrder, setWordOrder] = useState<string[]>([]);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState(0);
+  const [matchingAnswers, setMatchingAnswers] = useState<{ [wordIndex: number]: number }>({});
 
   // Animations
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -69,6 +71,7 @@ export default function LessonScreen() {
     setUserAnswer("");
     setSelectedOption(null);
     setWordOrder([]);
+    setMatchingAnswers({});
     flipAnim.setValue(0);
     slideAnim.setValue(0);
 
@@ -137,6 +140,16 @@ export default function LessonScreen() {
         const userSentence = wordOrder.join(" ");
         isCorrect = userSentence === currentExercise.correctAnswer;
         break;
+      case "word-definition-matching":
+        // Check if all matches are correct
+        const matchingPairs = currentExercise.matchingPairs || [];
+        isCorrect = Object.keys(matchingAnswers).length === matchingPairs.length &&
+          Object.keys(matchingAnswers).every(wordIndexStr => {
+            const wordIndex = parseInt(wordIndexStr);
+            const definitionIndex = matchingAnswers[wordIndex];
+            return definitionIndex === wordIndex; // Assuming correct order
+          });
+        break;
       default:
         isCorrect = true; // For flashcard and listening, user decides
     }
@@ -198,6 +211,14 @@ export default function LessonScreen() {
             showAnswer={showAnswer}
             userAnswer={userAnswer}
             setUserAnswer={setUserAnswer}
+          />
+        );
+      case "word-definition-matching":
+        return (
+          <WordDefinitionMatchingExercise
+            exercise={currentExercise}
+            showAnswer={showAnswer}
+            onAnswerChange={setMatchingAnswers}
           />
         );
       default:

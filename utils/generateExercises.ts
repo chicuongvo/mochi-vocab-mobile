@@ -8,6 +8,7 @@ export const generateExercises = (currentWords: Word[]): Exercise[] => {
     "multiple-choice",
     "fill-blank",
     "word-order",
+    "word-definition-matching",
   ];
 
   currentWords.forEach(word => {
@@ -75,6 +76,33 @@ export const generateExercises = (currentWords: Word[]): Exercise[] => {
           break;
         case "spelling":
           exercises.push({ type, word, correctAnswer: word.word });
+          break;
+        case "word-definition-matching":
+          // For matching exercise, we need multiple words
+          // Get 3 other words to create a set of 4 for matching
+          const otherMatchingWords = currentWords
+            .filter(w => w.word !== word.word)
+            .slice(0, 3);
+          
+          const matchingPairs = [
+            {
+              word: word.word,
+              definition: word.definition,
+              pronunciation: word.pronunciation,
+            },
+            ...otherMatchingWords.map(w => ({
+              word: w.word,
+              definition: w.definition,
+              pronunciation: w.pronunciation,
+            })),
+          ];
+
+          exercises.push({
+            type,
+            word,
+            matchingPairs,
+            options: matchingPairs.map(pair => pair.definition),
+          });
           break;
       }
     });

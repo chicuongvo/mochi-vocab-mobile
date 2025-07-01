@@ -41,6 +41,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         return !userAnswer.trim();
       case "word-order":
         return wordOrder.length === 0;
+      case "word-definition-matching":
+        // For matching exercise, we can allow checking even with partial matches
+        return false;
       default:
         return false;
     }

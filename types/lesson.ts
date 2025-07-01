@@ -4,7 +4,8 @@ export type ExerciseType =
   | "fill-blank"
   | "word-order"
   | "listening"
-  | "spelling";
+  | "spelling"
+  | "word-definition-matching";
 
 export interface Word {
   id: number;
@@ -27,4 +28,9 @@ export interface Exercise {
   shuffledWords?: string[];
   originalSentence?: string;
   ipaHint?: string;
+  matchingPairs?: Array<{
+    word: string;
+    definition: string;
+    pronunciation?: string;
+  }>;
 }
