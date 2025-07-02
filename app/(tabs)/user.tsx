@@ -3,7 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Camera, LocationEdit as Edit3, LogOut, Mail, Save, User as UserIcon, X } from "lucide-react-native";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   Image,
@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile, loading } = useAuth();
+  const { user, signOut, updateProfile, loading: authLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -146,11 +146,20 @@ export default function UserScreen() {
     setShowAvatarModal(false);
   };
 
-  // Show loading state while auth is loading
-  if (loading) {
+  // Show loading state while auth is loading initially
+  if (authLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show message if no user data
+  if (!user) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={styles.errorText}>No user data available</Text>
       </View>
     );
   }
@@ -652,5 +661,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#7F8C8D",
     fontWeight: "500",
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#7F8C8D",
+    textAlign: "center",
+  },
+  errorText: {
+    fontSize: 18,
+    color: "#E74C3C",
+    textAlign: "center",
   },
 });

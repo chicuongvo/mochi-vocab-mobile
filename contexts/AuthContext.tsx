@@ -58,7 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
         
-        setLoading(false);
+        // Don't set loading to false here for USER_UPDATED events
+        // Only set it to false for initial auth state changes
+        if (event !== 'USER_UPDATED') {
+          setLoading(false);
+        }
       }
     );
 
@@ -126,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updates: { fullName?: string; avatarUrl?: string }) => {
-    setLoading(true);
+    // Don't set global loading state for profile updates
     try {
       const result = await AuthService.updateProfile(updates);
       
@@ -139,8 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return result;
     } catch (error) {
       return { error: error as Error };
-    } finally {
-      setLoading(false);
     }
   };
 
