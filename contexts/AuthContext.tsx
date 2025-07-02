@@ -6,11 +6,18 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName?: string
+  ) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
-  updateProfile: (updates: { fullName?: string; avatarUrl?: string }) => Promise<{ error: Error | null }>;
+  updateProfile: (updates: {
+    fullName?: string;
+    avatarUrl?: string;
+  }) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const currentSession = await AuthService.getCurrentSession();
         setSession(currentSession);
-        
+
         if (currentSession) {
           const currentUser = await AuthService.getCurrentUser();
           setUser(currentUser);
@@ -41,20 +48,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getInitialSession();
 
     // Lắng nghe thay đổi auth state
-    const { data: { subscription } } = AuthService.onAuthStateChange(
-      async (event, session) => {
-        console.log("Auth state changed:", event, session);
-        setSession(session);
-        
-        if (session && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
-          const currentUser = await AuthService.getCurrentUser();
-          setUser(currentUser);
-        } else if (!session) {
-          setUser(null);
-        }
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = AuthService.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+      setSession(session);
+
+      if (session && event === "SIGNED_IN") {
+        console.log("Loading1");
+        const currentUser = await AuthService.getCurrentUser();
+        console.log("user", currentUser);
+        setUser(currentUser);
+      } else if (!session) {
+        console.log("Loading2");
+        setUser(null);
       }
-    );
+      setLoading(false);
+      console.log("Loading3");
+    });
 
     return () => {
       subscription?.unsubscribe();
@@ -65,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const result = await AuthService.signUp(email, password, fullName);
-      
+
       if (result.error) {
         return { error: result.error };
       }
@@ -83,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const result = await AuthService.signIn(email, password);
-      
+
       if (result.error) {
         return { error: result.error };
       }
@@ -101,12 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const result = await AuthService.signOut();
-      
+
       if (!result.error) {
         setUser(null);
         setSession(null);
       }
-      
+
       return result;
     } catch (error) {
       return { error: error as Error };
@@ -119,7 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return AuthService.resetPassword(email);
   };
 
-  const updateProfile = async (updates: { fullName?: string; avatarUrl?: string }) => {
+  const updateProfile = async (updates: {
+    fullName?: string;
+    avatarUrl?: string;
+  }) => {
     setLoading(true); // Đặt loading trước khi cập nhật
     try {
       const result = await AuthService.updateProfile(updates);
@@ -128,12 +142,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const updatedUser = await AuthService.getCurrentUser();
         setUser(updatedUser);
       }
+      console.log("Result", result);
       return result;
     } catch (error) {
       return { error: error as Error };
     } finally {
       setLoading(false); // Đảm bảo loading được đặt lại
-
     }
   };
 
@@ -148,11 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

@@ -2,7 +2,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Camera, LocationEdit as Edit3, LogOut, Mail, Save, User as UserIcon, X } from "lucide-react-native";
+import {
+  Camera,
+  LocationEdit as Edit3,
+  LogOut,
+  Mail,
+  Save,
+  User as UserIcon,
+  X,
+} from "lucide-react-native";
 import { useState } from "react";
 import {
   Alert,
@@ -17,9 +25,9 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile } = useAuth();
+  const { user, signOut, updateProfile, loading: isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // Form states
@@ -33,8 +41,9 @@ export default function UserScreen() {
       return;
     }
 
-    setIsLoading(true);
+    // setIsLoading(true);
     try {
+      console.log("Updated");
       const { error } = await updateProfile({
         fullName: fullName.trim(),
         avatarUrl: avatarUri,
@@ -50,7 +59,7 @@ export default function UserScreen() {
       console.error("Profile update error:", err);
       Alert.alert("Error", "An unexpected error occurred.");
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -59,6 +68,7 @@ export default function UserScreen() {
     setEmail(user?.email || "");
     setAvatarUri(user?.avatarUrl || "");
     setIsEditing(false);
+    // setIsLoading(false);
   };
 
   const handleLogout = async () => {
@@ -242,7 +252,10 @@ export default function UserScreen() {
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.saveButton, isLoading && styles.disabledButton]}
+                  style={[
+                    styles.saveButton,
+                    isLoading && styles.disabledButton,
+                  ]}
                   onPress={handleSaveProfile}
                   disabled={isLoading}
                 >
@@ -259,7 +272,7 @@ export default function UserScreen() {
         {/* Account Actions */}
         <View style={styles.accountSection}>
           <Text style={styles.sectionTitle}>Account Actions</Text>
-          
+
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LinearGradient
               colors={["#E74C3C", "#C0392B"]}
@@ -293,12 +306,12 @@ export default function UserScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Change Avatar</Text>
-            
+
             <TouchableOpacity style={styles.modalOption} onPress={takePhoto}>
               <Camera size={24} color="#3498DB" />
               <Text style={styles.modalOptionText}>Take Photo</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.modalOption}
               onPress={pickImageFromLibrary}
@@ -306,7 +319,7 @@ export default function UserScreen() {
               <UserIcon size={24} color="#9B59B6" />
               <Text style={styles.modalOptionText}>Choose from Library</Text>
             </TouchableOpacity>
-            
+
             {avatarUri && (
               <TouchableOpacity
                 style={styles.modalOption}
@@ -316,7 +329,7 @@ export default function UserScreen() {
                 <Text style={styles.modalOptionText}>Remove Avatar</Text>
               </TouchableOpacity>
             )}
-            
+
             <TouchableOpacity
               style={styles.modalCancel}
               onPress={() => setShowAvatarModal(false)}
