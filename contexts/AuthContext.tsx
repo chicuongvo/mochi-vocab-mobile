@@ -47,8 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         
         if (session) {
-          const currentUser = await AuthService.getCurrentUser();
-          setUser(currentUser);
+          // Always fetch fresh user data when session changes
+          try {
+            const currentUser = await AuthService.getCurrentUser();
+            setUser(currentUser);
+          } catch (error) {
+            console.error("Error fetching user after auth state change:", error);
+          }
         } else {
           setUser(null);
         }
@@ -121,15 +126,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateProfile = async (updates: { fullName?: string; avatarUrl?: string }) => {
-    const result = await AuthService.updateProfile(updates);
-    
-    if (!result.error) {
-      // Cập nhật user state local
-      const updatedUser = await AuthService.getCurrentUser();
-      setUser(updatedUser);
+    setLoading(true);
+    try {
+      const result = await AuthService.updateProfile(updates);
+      
+      if (!result.error) {
+        // Force refresh user data immediately after successful update
+        const updatedUser = await AuthService.getCurrentUser();
+        setUser(updatedUser);
+      }
+      
+      return result;
+    } catch (error) {
+      return { error: error as Error };
+    } finally {
+      setLoading(false);
     }
-    
-    return result;
   };
 
   const value: AuthContextType = {

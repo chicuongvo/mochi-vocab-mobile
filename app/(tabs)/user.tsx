@@ -17,7 +17,7 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile } = useAuth();
+  const { user, signOut, updateProfile, loading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -26,6 +26,15 @@ export default function UserScreen() {
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatarUri, setAvatarUri] = useState(user?.avatarUrl || "");
+
+  // Update form states when user data changes
+  React.useEffect(() => {
+    if (user) {
+      setFullName(user.fullName || "");
+      setEmail(user.email || "");
+      setAvatarUri(user.avatarUrl || "");
+    }
+  }, [user]);
 
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -136,6 +145,15 @@ export default function UserScreen() {
     setAvatarUri("");
     setShowAvatarModal(false);
   };
+
+  // Show loading state while auth is loading
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
