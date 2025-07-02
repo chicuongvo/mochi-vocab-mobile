@@ -1,9 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Camera, LocationEdit as Edit3, LogOut, Mail, Save, User as UserIcon, X } from "lucide-react-native";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Image,
