@@ -5,6 +5,8 @@ import { router } from "expo-router";
 import {
   Camera,
   LocationEdit as Edit3,
+  Eye,
+  EyeOff,
   LogOut,
   Mail,
   Save,
@@ -25,7 +27,7 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile, loading: isLoading } = useAuth();
+  const { user, signIn, signOut, updateProfile, updatePassword, loading: isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -34,6 +36,12 @@ export default function UserScreen() {
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatarUri, setAvatarUri] = useState(user?.avatarUrl || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -69,6 +77,53 @@ export default function UserScreen() {
     setAvatarUri(user?.avatarUrl || "");
     setIsEditing(false);
     // setIsLoading(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      Alert.alert("Error", "Password must contain both letters and numbers");
+      return;
+    }
+
+    try {
+      // Xác thực current password trước
+      const { error: signInError } = await signIn(email, currentPassword);
+      if (signInError) {
+        Alert.alert("Error", "Current password is incorrect");
+        return;
+      }
+
+      // Nếu đúng, tiếp tục đổi mật khẩu
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        Alert.alert("Error", error.message || "Failed to update password");
+      } else {
+        Alert.alert("Success", "Password updated successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred");
+    }
   };
 
   const handleLogout = async () => {
@@ -261,12 +316,75 @@ export default function UserScreen() {
                 >
                   <Save size={20} color="#FFFFFF" />
                   <Text style={styles.saveButtonText}>
-                    {isLoading ? "Saving..." : "Save Changes"}
+                    {isLoading ? "Saving..." : "Save"}
                   </Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
+        </View>
+
+        {/* Change Password Pane */}
+        <View style={styles.changePasswordSection}>
+          <Text style={styles.sectionTitle}>Change Password</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Current Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showCurrentPassword}
+                placeholder="Enter current password"
+                placeholderTextColor="#BDC3C7"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+              />
+              <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                {showCurrentPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>New Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showNewPassword}
+                placeholder="Enter new password"
+                placeholderTextColor="#BDC3C7"
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                {showNewPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Confirm New Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showConfirmPassword}
+                placeholder="Re-enter new password"
+                placeholderTextColor="#BDC3C7"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleChangePassword}
+          >
+            <Text style={styles.saveButtonText}>Update Password</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Account Actions */}
@@ -648,4 +766,15 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     fontWeight: "500",
   },
+  changePasswordSection: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 25,
+  marginTop: 20,
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+},
 });

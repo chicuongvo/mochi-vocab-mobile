@@ -2,14 +2,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserStats } from "@/hooks/useUserStats";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { BookOpen, LogOut, Trophy } from "lucide-react-native";
+import { BookOpen, Trophy } from "lucide-react-native";
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 export default function ProfileScreen() {
@@ -107,7 +107,15 @@ export default function ProfileScreen() {
       >
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatar}>👩‍🎓</Text>
+            {user?.avatarUrl ? (
+              <Image
+                source={{ uri: user.avatarUrl }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={styles.avatar}>👤</Text> // fallback emoji nếu không có avatar
+            )}
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>
@@ -119,15 +127,6 @@ export default function ProfileScreen() {
             </Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-            >
-              <LogOut size={20} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View style={styles.mascotContainer}>
-              <Text style={styles.mascot}>🐱</Text>
-            </View>
           </View>
         </View>
       </LinearGradient>
@@ -593,5 +592,12 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 30,
+  },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: "#fff",
   },
 });
