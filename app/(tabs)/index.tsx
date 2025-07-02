@@ -1,8 +1,8 @@
 import { Audio } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Clock, Star, Target, TrendingUp } from "lucide-react-native";
-import { useEffect, useRef } from "react";
+import { Clock, Star, Target, TrendingUp, Volume2, VolumeX } from "lucide-react-native";
+import { useEffect, useRef, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -17,6 +17,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const soundRef = useRef<Audio.Sound | null>(null);
   const { stats, loading } = useUserStats();
+  const [isPlaying, setIsPlaying] = useState(true);
 
   const navigateToCourses = () => {
     router.push("/(tabs)/courses");
@@ -47,6 +48,17 @@ export default function HomeScreen() {
     };
   }, []);
 
+  const toggleSound = async () => {
+    if (soundRef.current) {
+      if (isPlaying) {
+        await soundRef.current.pauseAsync();
+      } else {
+        await soundRef.current.playAsync();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   // Sử dụng dữ liệu từ stats hoặc fallback values nếu đang loading hoặc user chưa đăng nhập
   const currentStreak = stats.currentStreak;
   const wordsToReview = stats.wordsToReview;
@@ -73,9 +85,13 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Good morning! 🌅</Text>
             <Text style={styles.username}>Ready to learn with Mochi?</Text>
           </View>
-          <View style={styles.mascotContainer}>
-            <Text style={styles.mascot}>🍡</Text>
-          </View>
+          <TouchableOpacity style={styles.mascotContainer} onPress={toggleSound}>
+            {isPlaying ? (
+              <Volume2 color="#FFF" size={24} />
+            ) : (
+              <VolumeX color="#FFF" size={24} />
+            )}
+          </TouchableOpacity>
         </View>
       </LinearGradient>
 
