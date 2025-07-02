@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { BookOpen, PhoneIncoming as HomeIcon, NotebookPen, User } from "lucide-react-native";
+import { BookOpen, Cat, PhoneIncoming as HomeIcon, NotebookPen, User } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -55,6 +55,13 @@ export default function TabLayout() {
         options={{
           title: "User",
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Statistic",
+          tabBarIcon: ({ size, color }) => <Cat size={size} color={color} />,
         }}
       />
     </Tabs>

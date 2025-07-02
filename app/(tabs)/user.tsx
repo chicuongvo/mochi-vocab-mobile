@@ -316,7 +316,7 @@ export default function UserScreen() {
                 >
                   <Save size={20} color="#FFFFFF" />
                   <Text style={styles.saveButtonText}>
-                    {isLoading ? "Saving..." : "Save Changes"}
+                    {isLoading ? "Saving..." : "Save"}
                   </Text>
                 </TouchableOpacity>
               </View>
