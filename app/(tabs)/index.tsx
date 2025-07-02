@@ -15,10 +15,6 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { stats, loading } = useUserStats();
 
-  const navigateToReview = () => {
-    router.push("/(tabs)/review");
-  };
-
   const navigateToCourses = () => {
     router.push("/(tabs)/courses");
   };
@@ -64,7 +60,6 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.goldenTimeCard}
-          onPress={navigateToReview}
         >
           <LinearGradient
             colors={["#FFD700", "#FFA500"]}

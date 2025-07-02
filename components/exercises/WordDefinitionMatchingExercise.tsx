@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "bold",
     color: "#2ECC71",
-    flex: 1.2,
+    flex: 1.3,
     textAlign: "right",
   },
   matchArrow: {
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   correctDefinition: {
     fontSize: 13,
     color: "#2ECC71",
-    flex: 1.8,
+    flex: 1.7,
   },
   progressContainer: {
     alignItems: "center",
