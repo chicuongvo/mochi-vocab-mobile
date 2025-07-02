@@ -27,7 +27,7 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile, updatePassword, loading: isLoading } = useAuth();
+  const { user, signIn, signOut, updateProfile, updatePassword, loading: isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -103,6 +103,14 @@ export default function UserScreen() {
     }
 
     try {
+      // Xác thực current password trước
+      const { error: signInError } = await signIn(email, currentPassword);
+      if (signInError) {
+        Alert.alert("Error", "Current password is incorrect");
+        return;
+      }
+
+      // Nếu đúng, tiếp tục đổi mật khẩu
       const { error } = await updatePassword(newPassword);
       if (error) {
         Alert.alert("Error", error.message || "Failed to update password");
