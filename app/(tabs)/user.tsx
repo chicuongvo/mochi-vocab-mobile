@@ -34,7 +34,6 @@ export default function UserScreen() {
     }
 
     setIsLoading(true);
-    
     try {
       const { error } = await updateProfile({
         fullName: fullName.trim(),
@@ -42,7 +41,6 @@ export default function UserScreen() {
       });
 
       if (error) {
-        console.error("Profile update error:", error);
         Alert.alert("Error", "Failed to update profile. Please try again.");
       } else {
         Alert.alert("Success", "Profile updated successfully!");
@@ -52,18 +50,15 @@ export default function UserScreen() {
       console.error("Profile update error:", err);
       Alert.alert("Error", "An unexpected error occurred.");
     } finally {
-      // Always reset loading state
       setIsLoading(false);
     }
   };
 
   const handleCancelEdit = () => {
-    // Reset form to original values
     setFullName(user?.fullName || "");
     setEmail(user?.email || "");
     setAvatarUri(user?.avatarUrl || "");
     setIsEditing(false);
-    setIsLoading(false); // Ensure loading state is reset
   };
 
   const handleLogout = async () => {
@@ -76,20 +71,16 @@ export default function UserScreen() {
         text: "Sign Out",
         style: "destructive",
         onPress: async () => {
-          setIsLoading(true);
           try {
             const { error } = await signOut();
             if (error) {
               Alert.alert("Error", "Failed to sign out. Please try again.");
-              setIsLoading(false);
             } else {
-              // Don't reset loading here as we're navigating away
               router.replace("/(auth)/login");
             }
           } catch (err) {
             console.error("Logout error:", err);
             Alert.alert("Error", "An error occurred while signing out.");
-            setIsLoading(false);
           }
         },
       },
@@ -97,57 +88,47 @@ export default function UserScreen() {
   };
 
   const pickImageFromLibrary = async () => {
-    try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Sorry, we need camera roll permissions to change your avatar."
-        );
-        return;
-      }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Sorry, we need camera roll permissions to change your avatar."
+      );
+      return;
+    }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
-      if (!result.canceled && result.assets[0]) {
-        setAvatarUri(result.assets[0].uri);
-        setShowAvatarModal(false);
-      }
-    } catch (error) {
-      console.error("Error picking image:", error);
-      Alert.alert("Error", "Failed to pick image. Please try again.");
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+      setShowAvatarModal(false);
     }
   };
 
   const takePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Sorry, we need camera permissions to take a photo."
-        );
-        return;
-      }
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Required",
+        "Sorry, we need camera permissions to take a photo."
+      );
+      return;
+    }
 
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
 
-      if (!result.canceled && result.assets[0]) {
-        setAvatarUri(result.assets[0].uri);
-        setShowAvatarModal(false);
-      }
-    } catch (error) {
-      console.error("Error taking photo:", error);
-      Alert.alert("Error", "Failed to take photo. Please try again.");
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+      setShowAvatarModal(false);
     }
   };
 
@@ -155,15 +136,6 @@ export default function UserScreen() {
     setAvatarUri("");
     setShowAvatarModal(false);
   };
-
-  // Update form when user data changes (after successful update)
-  React.useEffect(() => {
-    if (user && !isEditing) {
-      setFullName(user.fullName || "");
-      setEmail(user.email || "");
-      setAvatarUri(user.avatarUrl || "");
-    }
-  }, [user, isEditing]);
 
   return (
     <View style={styles.container}>
@@ -194,7 +166,7 @@ export default function UserScreen() {
             <TouchableOpacity
               style={styles.avatarContainer}
               onPress={() => isEditing && setShowAvatarModal(true)}
-              disabled={!isEditing || isLoading}
+              disabled={!isEditing}
             >
               {avatarUri ? (
                 <Image source={{ uri: avatarUri }} style={styles.avatar} />
@@ -203,7 +175,7 @@ export default function UserScreen() {
                   <UserIcon size={40} color="#9B59B6" />
                 </View>
               )}
-              {isEditing && !isLoading && (
+              {isEditing && (
                 <View style={styles.avatarEditOverlay}>
                   <Camera size={20} color="#FFFFFF" />
                 </View>
@@ -221,12 +193,12 @@ export default function UserScreen() {
               <View style={styles.inputContainer}>
                 <UserIcon size={20} color="#7F8C8D" />
                 <TextInput
-                  style={[styles.input, (!isEditing || isLoading) && styles.inputDisabled]}
+                  style={[styles.input, !isEditing && styles.inputDisabled]}
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Enter your full name"
                   placeholderTextColor="#BDC3C7"
-                  editable={isEditing && !isLoading}
+                  editable={isEditing}
                 />
               </View>
             </View>
@@ -253,9 +225,8 @@ export default function UserScreen() {
           <View style={styles.actionSection}>
             {!isEditing ? (
               <TouchableOpacity
-                style={[styles.editButton, isLoading && styles.disabledButton]}
+                style={styles.editButton}
                 onPress={() => setIsEditing(true)}
-                disabled={isLoading}
               >
                 <Edit3 size={20} color="#FFFFFF" />
                 <Text style={styles.editButtonText}>Edit Profile</Text>
@@ -263,7 +234,7 @@ export default function UserScreen() {
             ) : (
               <View style={styles.editActions}>
                 <TouchableOpacity
-                  style={[styles.cancelButton, isLoading && styles.disabledButton]}
+                  style={styles.cancelButton}
                   onPress={handleCancelEdit}
                   disabled={isLoading}
                 >
@@ -289,11 +260,7 @@ export default function UserScreen() {
         <View style={styles.accountSection}>
           <Text style={styles.sectionTitle}>Account Actions</Text>
           
-          <TouchableOpacity 
-            style={[styles.logoutButton, isLoading && styles.disabledButton]} 
-            onPress={handleLogout}
-            disabled={isLoading}
-          >
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LinearGradient
               colors={["#E74C3C", "#C0392B"]}
               style={styles.logoutGradient}
@@ -301,9 +268,7 @@ export default function UserScreen() {
               end={{ x: 1, y: 1 }}
             >
               <LogOut size={20} color="#FFFFFF" />
-              <Text style={styles.logoutButtonText}>
-                {isLoading ? "Signing Out..." : "Sign Out"}
-              </Text>
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -320,7 +285,7 @@ export default function UserScreen() {
 
       {/* Avatar Selection Modal */}
       <Modal
-        visible={showAvatarModal && !isLoading}
+        visible={showAvatarModal}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowAvatarModal(false)}
