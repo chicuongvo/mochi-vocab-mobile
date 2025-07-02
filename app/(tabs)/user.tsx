@@ -5,6 +5,8 @@ import { router } from "expo-router";
 import {
   Camera,
   LocationEdit as Edit3,
+  Eye,
+  EyeOff,
   LogOut,
   Mail,
   Save,
@@ -37,6 +39,9 @@ export default function UserScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -112,7 +117,6 @@ export default function UserScreen() {
       Alert.alert("Error", "An error occurred");
     }
   };
-
 
   const handleLogout = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -320,13 +324,16 @@ export default function UserScreen() {
             <Text style={styles.inputLabel}>Current Password</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.input}
-                secureTextEntry
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showCurrentPassword}
                 placeholder="Enter current password"
                 placeholderTextColor="#BDC3C7"
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
               />
+              <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                {showCurrentPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -334,13 +341,16 @@ export default function UserScreen() {
             <Text style={styles.inputLabel}>New Password</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.input}
-                secureTextEntry
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showNewPassword}
                 placeholder="Enter new password"
                 placeholderTextColor="#BDC3C7"
                 value={newPassword}
                 onChangeText={setNewPassword}
               />
+              <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                {showNewPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -348,13 +358,16 @@ export default function UserScreen() {
             <Text style={styles.inputLabel}>Confirm New Password</Text>
             <View style={styles.inputContainer}>
               <TextInput
-                style={styles.input}
-                secureTextEntry
+                style={[styles.input, { flex: 1 }]}
+                secureTextEntry={!showConfirmPassword}
                 placeholder="Re-enter new password"
                 placeholderTextColor="#BDC3C7"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
               />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+              </TouchableOpacity>
             </View>
           </View>
 
