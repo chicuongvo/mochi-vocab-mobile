@@ -202,56 +202,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Recent Achievements */}
-      {/* <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Star size={20} color="#F39C12" />
-          <Text style={styles.sectionTitle}>Recent Achievements</Text>
-        </View>
-
-        {recentAchievements.map(achievement => (
-          <View key={achievement.id} style={styles.achievementCard}>
-            <View style={styles.achievementIcon}>
-              <Text style={styles.achievementEmoji}>{achievement.icon}</Text>
-            </View>
-            <View style={styles.achievementInfo}>
-              <Text style={styles.achievementTitle}>{achievement.title}</Text>
-              <Text style={styles.achievementDescription}>
-                {achievement.description}
-              </Text>
-            </View>
-            <Text style={styles.achievementDate}>{achievement.date}</Text>
-          </View>
-        ))}
-      </View> */}
-
-      {/* Learning Insights */}
-      {/* <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Learning Insights 🧠</Text>
-        <View style={styles.insightCard}>
-          <View style={styles.insightHeader}>
-            <TrendingUp size={20} color="#2ECC71" />
-            <Text style={styles.insightTitle}>Your Learning Pattern</Text>
-          </View>
-          <Text style={styles.insightText}>
-            You're most productive in the morning! 🌅 Your best learning time is
-            between 8:00 AM - 10:00 AM with 92% accuracy rate.
-          </Text>
-        </View>
-
-        <View style={styles.insightCard}>
-          <View style={styles.insightHeader}>
-            <Target size={20} color="#FF6B9D" />
-            <Text style={styles.insightTitle}>Strength Areas</Text>
-          </View>
-          <Text style={styles.insightText}>
-            You excel at TOEIC vocabulary (95% accuracy) and Academic terms (89%
-            accuracy). Consider challenging yourself with Medical terminology
-            next! 💪
-          </Text>
-        </View>
-      </View> */}
-
       {/* Goals Section */}
       <View style={styles.section}>
         <Text style={{ ...styles.sectionTitle, marginBottom: 12 }}>

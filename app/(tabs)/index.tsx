@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Clock, Star, Target, TrendingUp } from "lucide-react-native";
+import { Star, Target, TrendingUp } from "lucide-react-native";
 import {
   ScrollView,
   StyleSheet,
@@ -14,6 +14,10 @@ import { useUserStats } from "../../hooks/useUserStats";
 export default function HomeScreen() {
   const { user } = useAuth();
   const { stats, loading } = useUserStats();
+
+  const navigateToReview = () => {
+    router.push("/(tabs)/review");
+  };
 
   const navigateToCourses = () => {
     router.push("/(tabs)/courses");
@@ -52,7 +56,7 @@ export default function HomeScreen() {
       </LinearGradient>
 
       {/* Golden Time Section */}
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Clock size={20} color="#FF6B9D" style={{ marginBottom: 8 }} />
           <Text style={styles.sectionTitle}>Golden Time ⏰</Text>
@@ -60,6 +64,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={styles.goldenTimeCard}
+          onPress={navigateToReview}
         >
           <LinearGradient
             colors={["#FFD700", "#FFA500"]}
@@ -83,7 +88,7 @@ export default function HomeScreen() {
             </View>
           </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* Stats Overview */}
       <View style={styles.section}>

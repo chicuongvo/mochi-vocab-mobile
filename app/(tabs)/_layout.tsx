@@ -1,5 +1,11 @@
 import { Tabs } from "expo-router";
-import { BookOpen, PhoneIncoming as HomeIcon, NotebookPen, User } from "lucide-react-native";
+import {
+  BookOpen,
+  Home,
+  NotebookPen,
+  PieChart,
+  User,
+} from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -27,9 +33,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ size, color }) => (
-            <HomeIcon size={size} color={color} />
-          ),
+          tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -47,6 +51,16 @@ export default function TabLayout() {
           title: "Notebook",
           tabBarIcon: ({ size, color }) => (
             <NotebookPen size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Stats",
+          tabBarIcon: ({ size, color }) => (
+            <PieChart size={size} color={color} />
           ),
         }}
       />
