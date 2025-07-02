@@ -1,6 +1,8 @@
+import { Audio } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Clock, Star, Target, TrendingUp } from "lucide-react-native";
+import { useEffect, useRef } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -13,11 +15,37 @@ import { useUserStats } from "../../hooks/useUserStats";
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const soundRef = useRef<Audio.Sound | null>(null);
   const { stats, loading } = useUserStats();
 
   const navigateToCourses = () => {
     router.push("/(tabs)/courses");
   };
+
+  useEffect(() => {
+    const loadAndPlay = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require("@/assets/sounds/sound.mp3"),
+          {
+            shouldPlay: true,
+            isLooping: true,
+            volume: 0.3,
+          }
+        );
+        soundRef.current = sound;
+        await sound.playAsync();
+      } catch (e) {
+        console.warn("Error playing audio:", e);
+      }
+    };
+
+    loadAndPlay();
+
+    return () => {
+      soundRef.current?.unloadAsync();
+    };
+  }, []);
 
   // Sử dụng dữ liệu từ stats hoặc fallback values nếu đang loading hoặc user chưa đăng nhập
   const currentStreak = stats.currentStreak;
