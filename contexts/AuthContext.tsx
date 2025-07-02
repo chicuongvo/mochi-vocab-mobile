@@ -133,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: error as Error };
     } finally {
       setLoading(false); // Đảm bảo loading được đặt lại
+
     }
   };
 
