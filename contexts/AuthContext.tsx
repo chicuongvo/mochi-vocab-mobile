@@ -18,6 +18,7 @@ interface AuthContextType {
     fullName?: string;
     avatarUrl?: string;
   }) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -151,6 +152,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+    const updatePassword = async (newPassword: string) => {
+    return AuthService.updatePassword(newPassword);
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -160,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resetPassword,
     updateProfile,
+    updatePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

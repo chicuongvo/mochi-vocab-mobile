@@ -25,7 +25,7 @@ import {
 } from "react-native";
 
 export default function UserScreen() {
-  const { user, signOut, updateProfile, loading: isLoading } = useAuth();
+  const { user, signOut, updateProfile, updatePassword, loading: isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -34,6 +34,9 @@ export default function UserScreen() {
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [avatarUri, setAvatarUri] = useState(user?.avatarUrl || "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSaveProfile = async () => {
     if (!fullName.trim()) {
@@ -70,6 +73,46 @@ export default function UserScreen() {
     setIsEditing(false);
     // setIsLoading(false);
   };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+    if (!hasLetter || !hasNumber) {
+      Alert.alert("Error", "Password must contain both letters and numbers");
+      return;
+    }
+
+    try {
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        Alert.alert("Error", error.message || "Failed to update password");
+      } else {
+        Alert.alert("Success", "Password updated successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An error occurred");
+    }
+  };
+
 
   const handleLogout = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -267,6 +310,60 @@ export default function UserScreen() {
               </View>
             )}
           </View>
+        </View>
+
+        {/* Change Password Pane */}
+        <View style={styles.changePasswordSection}>
+          <Text style={styles.sectionTitle}>Change Password</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Current Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                placeholder="Enter current password"
+                placeholderTextColor="#BDC3C7"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>New Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                placeholder="Enter new password"
+                placeholderTextColor="#BDC3C7"
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Confirm New Password</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                secureTextEntry
+                placeholder="Re-enter new password"
+                placeholderTextColor="#BDC3C7"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleChangePassword}
+          >
+            <Text style={styles.saveButtonText}>Update Password</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Account Actions */}
@@ -648,4 +745,15 @@ const styles = StyleSheet.create({
     color: "#7F8C8D",
     fontWeight: "500",
   },
+  changePasswordSection: {
+  backgroundColor: "#FFFFFF",
+  borderRadius: 20,
+  padding: 25,
+  marginTop: 20,
+  elevation: 3,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 8,
+},
 });
