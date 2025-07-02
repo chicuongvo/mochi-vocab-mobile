@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { Lock, Mail } from "lucide-react-native";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react-native";
 import { useState } from "react";
 import {
   Alert,
@@ -17,6 +17,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn } = useAuth();
 
   const handleLogin = async () => {
@@ -107,14 +108,17 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <Lock size={20} color="#7F8C8D" />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { flex: 1 }]}
             placeholder="Password"
             placeholderTextColor="#95A5A6"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
             editable={!isLoading}
           />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            {showPassword ? <EyeOff size={20} color="#7F8C8D" /> : <Eye size={20} color="#7F8C8D" />}
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
