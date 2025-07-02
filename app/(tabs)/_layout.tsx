@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { BookOpen, HomeIcon, NotebookPen, User } from "lucide-react-native";
+import { BookOpen, PhoneIncoming as HomeIcon, NotebookPen, User } from "lucide-react-native";
 
 export default function TabLayout() {
   return (
