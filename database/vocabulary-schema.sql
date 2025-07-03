@@ -7,6 +7,7 @@ CREATE TABLE user_vocabularies (
   definition TEXT NOT NULL,
   example TEXT,
   topic TEXT,
+  audio_url TEXT,
   date_added DATE DEFAULT CURRENT_DATE,
   is_favorite BOOLEAN DEFAULT FALSE,
   review_count INTEGER DEFAULT 0,

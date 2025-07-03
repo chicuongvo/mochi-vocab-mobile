@@ -1,6 +1,9 @@
 # 🎓 MochiMichi - Ứng dụng Học Tiếng Anh Thông Minh
+
 MochiMichi (EngLearn) là một ứng dụng học tiếng Anh hiện đại, được xây dựng với Expo và Supabase, mang đến trải nghiệm học tập tương tác, thú vị và hiệu quả. Với các bài tập từ vựng đa dạng, giao diện thân thiện, và tính năng theo dõi tiến độ học tập, EngLearn giúp người dùng cải thiện vốn từ vựng tiếng Anh một cách dễ dàng và đầy cảm hứng. Ứng dụng hỗ trợ đa nền tảng (iOS, Android, và web) với các tính năng như học từ mới, ôn tập, và tham gia các khóa học theo cấp độ.
+
 ## ✨ Tính năng chính
+
 ### 👤 Quản lý người dùng
 
 - **Đăng ký/Đăng nhập**: Xác thực an toàn qua email và mật khẩu với Supabase Auth.
@@ -39,12 +42,13 @@ MochiMichi (EngLearn) là một ứng dụng học tiếng Anh hiện đại, đ
 
 ### 🐱 Giao diện thân thiện
 
-- **Thiết kế hiện đại**: Sử dụng ```LinearGradient``` và ```Lucide Icons``` để tạo giao diện bắt mắt.
-- **Hiệu ứng động**: Tích hợp ```Lottie animations``` và giao diện kéo-thả mượt mà với ```react-native-draggable-flatlist.```
+- **Thiết kế hiện đại**: Sử dụng `LinearGradient` và `Lucide Icons` để tạo giao diện bắt mắt.
+- **Hiệu ứng động**: Tích hợp `Lottie animations` và giao diện kéo-thả mượt mà với `react-native-draggable-flatlist.`
 - **Responsive Design**: Tối ưu cho cả điện thoại, máy tính bảng và web.
 - **Hiệu ứng rung (Haptics)**: Tăng trải nghiệm người dùng với phản hồi xúc giác.
 
 ## 🚀 Công nghệ sử dụng
+
 ### Core Technologies
 
 - **Expo**: Framework để xây dựng ứng dụng đa nền tảng.
@@ -108,6 +112,7 @@ englearn/
 ```
 
 ## 🛠 Cài đặt và chạy dự án
+
 ### Yêu cầu hệ thống
 
 - **Node.js**: >= 18.0.0
@@ -124,12 +129,14 @@ englearn/
 
 - Copy file `.env.example` thành `.env`: `cp .env.example .env`
 - Cập nhật thông tin Supabase trong file `.env`:
+
 ```
 EXPO_PUBLIC_SUPABASE_URL=your-supabase-url-here
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 ```
 
 ### Cài đặt dependencies và seed dữ liệu
+
 - Tại thư mục gốc của dự án: `npm install`
 
 #### Khởi động dứng dụng
@@ -137,6 +144,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 ```
 npx expo start
 ```
+
 - App chạy tại `http://localhost:8081`.
 
 ## 📜 Scripts có sẵn
@@ -150,6 +158,7 @@ npx expo start
 - `npm run seed`: Chèn dữ liệu mẫu vào Supabase.
 
 ## 🌐 Environment Variables
+
 Tạo file `.env` trong thư mục gốc:
 
 ```
@@ -186,6 +195,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 - Mở Pull Request.
 
 ## 📄 License
+
 Dự án được phân phối dưới MIT License. Xem file `LICENSE` để biết thêm chi tiết.
 
 ## 👥 Team
@@ -194,5 +204,7 @@ Dự án được phân phối dưới MIT License. Xem file `LICENSE` để bi�
 - **Họ tên**: Võ Chí Cường - **MSSV**: 23520210
 
 ## ⭐ Nếu dự án hữu ích, hãy cho chúng tôi một star trên GitHub!
+
 ## 📞 Liên hệ
+
 - Mọi thắc mắc hoặc đóng góp, vui lòng liên hệ nhóm phát triển qua email hoặc GitHub issue.
