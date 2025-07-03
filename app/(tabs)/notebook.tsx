@@ -383,10 +383,10 @@ export default function NotebookScreen() {
         await trackWordReviewed();
         if (isCorrect) {
           // Track exercise completion với accuracy 100% nếu đúng
-          await trackExerciseCompletion(true, 0.5); // 0.5 phút cho mỗi review
+          trackExerciseCompletion(true, 1); // 0.5 phút cho mỗi review
         } else {
           // Track exercise completion với accuracy 0% nếu sai
-          await trackExerciseCompletion(false, 0.5);
+          trackExerciseCompletion(false, 1);
         }
       } catch (trackError) {
         console.error("Error tracking word reviewed:", trackError);

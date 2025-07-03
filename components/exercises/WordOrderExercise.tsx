@@ -106,6 +106,11 @@ export const WordOrderExercise: React.FC<WordOrderProps> = ({
   // Animation states
   const [animatingWords, setAnimatingWords] = useState<Set<string>>(new Set());
 
+  useEffect(() => {
+    setAnswerWords([]);
+    setBankWords(availableWords);
+  }, [exercise]);
+
   // Tạo animation cho từ
   const createWordAnimation = (word: string, fromAnswer: boolean) => {
     setAnimatingWords(prev => new Set(prev).add(word));
