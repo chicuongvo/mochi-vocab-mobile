@@ -27,12 +27,6 @@ MochiMichi (EngLearn) là một ứng dụng học tiếng Anh hiện đại, đ
 
 - **Hỗ trợ phát âm**: Tích hợp âm thanh phát âm từ và câu ví dụ.
 
-### 🍽 Quản lý thực đơn và món ăn
-
-- **Quản lý loại món ăn**: CRUD các loại món ăn (Khai vị, Gỏi, Súp, Món chính, Tráng miệng, v.v.).
-- **Quản lý món ăn**: Thêm, sửa, xóa món ăn với thông tin giá, ghi chú, ảnh URL.
-- **Quản lý thực đơn**: Tạo, chỉnh sửa thực đơn, tự động cập nhật giá thực đơn khi giá món ăn thay đổi.
-
 ### 📊 Theo dõi tiến độ
 
 - **Thống kê học tập**: Hiển thị số từ đã học, chuỗi ngày học liên tiếp (streak), và tỷ lệ hoàn thành mục tiêu hàng ngày.
